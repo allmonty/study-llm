@@ -9,6 +9,8 @@ pom.xml
 pom.xml.asc
 *.jar
 *.war
+.clj-kondo/
+.lsp/
 
 # Development
 .lein-*
