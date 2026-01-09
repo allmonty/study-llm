@@ -98,8 +98,13 @@
   Agent
   (execute [this input context]
     (log/info "LLMAgent executing:" name)
-    (let [tool-fn (get-in this [:tools :generate])
-          result (invoke-tool tool-fn input context)]
+    ;; Get the primary tool (first tool in the map, or a specific tool if configured)
+    (let [primary-tool-key (or (:primary-tool config) (first (keys tools)))
+          tool-fn (get tools primary-tool-key)
+          result (if tool-fn
+                   (invoke-tool tool-fn input context)
+                   {:status :error
+                    :message (str "No tool found for agent " name ". Available tools: " (keys tools))})]
       ;; Store interaction in memory
       (when memory
         (add-to-memory memory {:input input
@@ -125,8 +130,13 @@
   Agent
   (execute [this input context]
     (log/info "DatabaseAgent executing:" name)
-    (let [tool-fn (get-in this [:tools :query])
-          result (invoke-tool tool-fn input context)]
+    ;; Get the primary tool (first tool in the map, or a specific tool if configured)
+    (let [primary-tool-key (or (:primary-tool config) (first (keys tools)))
+          tool-fn (get tools primary-tool-key)
+          result (if tool-fn
+                   (invoke-tool tool-fn input context)
+                   {:status :error
+                    :message (str "No tool found for agent " name ". Available tools: " (keys tools))})]
       ;; Store interaction in memory
       (when memory
         (add-to-memory memory {:input input

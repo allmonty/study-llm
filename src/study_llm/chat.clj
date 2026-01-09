@@ -177,9 +177,19 @@
                     (do
                       (println "❌ Error analyzing results:" (:message analysis-result))
                       (println)
-                      (println "Raw results:")
-                      (doseq [row (take 10 results)]
-                        (println row))))))
+                      ;; Check if results contain a message field (e.g., from non-database questions)
+                      (if (and (= 1 (count results))
+                               (map? (first results))
+                               (:message (first results)))
+                        (do
+                          (println)
+                          (print-separator)
+                          (println (:message (first results)))
+                          (print-separator))
+                        (do
+                          (println "Raw results:")
+                          (doseq [row (take 10 results)]
+                            (println row))))))))
               (do
                 (println "❌ Error executing query:" (:message db-result))
                 (println)
