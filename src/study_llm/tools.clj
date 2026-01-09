@@ -65,11 +65,11 @@
      :model "Model to use (optional)"}
     (fn [params _context]
       (let [{:keys [prompt temperature model]} params
-            opts (cond-> {}
-                   temperature (assoc :temperature temperature)
-                   model (assoc :model model))]
+            opts (cond-> []
+                   temperature (conj :temperature temperature)
+                   model (conj :model model))]
         (log/info "Generating LLM completion")
-        (let [result (apply llm/generate-completion prompt (apply concat opts))]
+        (let [result (apply llm/generate-completion prompt opts)]
           (if (= :success (:status result))
             {:status :success
              :result (:response result)}
