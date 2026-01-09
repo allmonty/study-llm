@@ -94,9 +94,8 @@
 ;; Agents are created once and reused to avoid overhead of recreation
 ;; (memory stores, configurations, etc.)
 
-(defonce agent-instances
-  "Atom holding singleton agent instances for reuse."
-  (atom {}))
+;; Atom holding singleton agent instances for reuse.
+(defonce agent-instances (atom {}))
 
 (defn get-or-create-agent
   "Get an agent from cache or create it if it doesn't exist.
