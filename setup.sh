@@ -20,13 +20,18 @@ if ! command -v docker &> /dev/null; then
 fi
 echo "✅ Docker found: $(docker --version)"
 
-# Check Docker Compose
-if ! command -v docker-compose &> /dev/null; then
+# Check Docker Compose (v2 plugin or standalone)
+if docker compose version &> /dev/null; then
+    echo "✅ Docker Compose found: $(docker compose version)"
+    COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    echo "✅ Docker Compose found: $(docker-compose --version)"
+    COMPOSE_CMD="docker-compose"
+else
     echo "❌ Docker Compose is not installed. Please install Docker Compose first."
     echo "   Visit: https://docs.docker.com/compose/install/"
     exit 1
 fi
-echo "✅ Docker Compose found: $(docker-compose --version)"
 
 # Check Java
 if ! command -v java &> /dev/null; then
@@ -51,7 +56,7 @@ echo
 # Start Docker services
 echo "🐳 Starting Docker services..."
 echo
-docker-compose up -d
+$COMPOSE_CMD up -d
 
 echo
 echo "⏳ Waiting for services to be healthy..."
@@ -61,14 +66,14 @@ echo
 max_attempts=30
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
-    if docker-compose exec -T postgres pg_isready -U studyuser -d studydb &> /dev/null; then
+    if docker exec study-llm-postgres pg_isready -U studyuser -d studydb &> /dev/null; then
         echo "✅ PostgreSQL is ready!"
         break
     fi
     attempt=$((attempt + 1))
     if [ $attempt -eq $max_attempts ]; then
         echo "❌ PostgreSQL failed to start within expected time"
-        echo "   Check logs: docker-compose logs postgres"
+        echo "   Check logs: $COMPOSE_CMD logs postgres"
         exit 1
     fi
     sleep 2
