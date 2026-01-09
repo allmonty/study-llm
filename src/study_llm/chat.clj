@@ -110,14 +110,14 @@
 (defn process-question
   "Process a user question using the multi-agent orchestration framework.
   
-  This function demonstrates the agentic architecture where specialized agents
+  This function uses the orchestrator to coordinate specialized agents that
   work together to accomplish a complex task (text-to-SQL-to-analysis pipeline).
   
-  NOTE: This implementation manually executes each agent step-by-step to provide
-  clear visibility into the agent workflow for educational purposes. For a more
-  concise implementation, use the orchestrator directly (see commented alternative below).
-  
-  NOTE: Agents are created once and cached to avoid overhead on each question.
+  The orchestrator automatically manages:
+  - Sequential execution of agents
+  - Context passing between agents
+  - Error handling and rollback
+  - Memory management
   
   Agent Pipeline:
   1. SQL Generator Agent - Converts natural language to SQL
@@ -133,71 +133,99 @@
         db-agent (get-or-create-agent :database-executor db-exec/create-database-executor-agent)
         analyzer-agent (get-or-create-agent :result-analyzer analyzer/create-result-analyzer-agent)
         
-        ;; Create orchestrator (note: not used in this implementation, see alternative below)
+        ;; Create orchestrator to coordinate agents
         orchestrator (agent/create-orchestrator
                       [sql-agent db-agent analyzer-agent]
                       :strategy :sequential)
         
         ;; Initial context with schema information
-        initial-context {:schema schema-info
-                        :question question}]
+        initial-context {:schema schema-info}]
     
-    ;; Step 1: SQL Generator Agent
-    (println "Step 1: SQL Generator Agent - Converting question to SQL...")
-    (let [sql-result (agent/execute sql-agent question initial-context)]
-      (if (= :success (:status sql-result))
-        (let [sql (:result sql-result)]
-          (println "Generated SQL:")
-          (println "  " sql)
+    ;; Use orchestrator to execute all agents in sequence
+    (let [orchestration-result (agent/orchestrate orchestrator question initial-context)]
+      (if (= :success (:status orchestration-result))
+        ;; Success: Display results from each agent
+        (let [results (:results orchestration-result)
+              sql-result (nth results 0 nil)
+              db-result (nth results 1 nil)
+              analysis-result (nth results 2 nil)]
+          
+          ;; Display SQL generation
+          (when sql-result
+            (println "Step 1: SQL Generator Agent - Converting question to SQL...")
+            (println "Generated SQL:")
+            (println "  " (:result sql-result))
+            (println))
+          
+          ;; Display DB execution
+          (when db-result
+            (println "Step 2: Database Executor Agent - Executing query...")
+            (println "✅ Query executed successfully!")
+            (println "Found" (count (:result db-result)) "result(s)")
+            (println))
+          
+          ;; Display analysis
+          (when analysis-result
+            (println "Step 3: Result Analyzer Agent - Analyzing results...")
+            (println)
+            (print-separator)
+            (println "📊 Analysis:")
+            (println)
+            (println (:result analysis-result))
+            (println)
+            (print-separator)))
+        
+        ;; Error: Display error information
+        (let [error (:error orchestration-result)
+              results (:results orchestration-result)
+              error-agent-index (count results)]
+          (println "❌ Error in agent pipeline at step" (inc error-agent-index))
           (println)
           
-          ;; Step 2: Database Executor Agent
-          (println "Step 2: Database Executor Agent - Executing query...")
-          (let [db-context (merge initial-context (:updated-context sql-result))
-                db-result (agent/execute db-agent sql db-context)]
-            (if (= :success (:status db-result))
-              (let [results (:result db-result)]
-                (println "✅ Query executed successfully!")
-                (println "Found" (count results) "result(s)")
-                (println)
-                
-                ;; Step 3: Result Analyzer Agent
-                (println "Step 3: Result Analyzer Agent - Analyzing results...")
-                (let [analysis-context (merge db-context (:updated-context db-result))
-                      analysis-result (agent/execute analyzer-agent question analysis-context)]
-                  (if (= :success (:status analysis-result))
-                    (do
-                      (println)
-                      (print-separator)
-                      (println "📊 Analysis:")
-                      (println)
-                      (println (:result analysis-result))
-                      (println)
-                      (print-separator))
-                    (do
-                      (println "❌ Error analyzing results:" (:message analysis-result))
-                      (println)
-                      ;; Check if results contain a message field (e.g., from non-database questions)
-                      (if (and (= 1 (count results))
-                               (map? (first results))
-                               (:message (first results)))
-                        (do
-                          (println)
-                          (print-separator)
-                          (println (:message (first results)))
-                          (print-separator))
-                        (do
-                          (println "Raw results:")
-                          (doseq [row (take 10 results)]
-                            (println row))))))))
-              (do
-                (println "❌ Error executing query:" (:message db-result))
-                (println)
-                (println "The SQL might be incorrect. Try rephrasing your question.")))))
-        (do
-          (println "❌ Error generating SQL:" (:message sql-result))
-          (println)
-          (println "Please try rephrasing your question or check if Ollama is running."))))))
+          (cond
+            ;; Error in SQL generation
+            (= error-agent-index 0)
+            (do
+              (println "❌ Error generating SQL:" (:message error))
+              (println)
+              (println "Please try rephrasing your question or check if Ollama is running."))
+            
+            ;; Error in DB execution
+            (= error-agent-index 1)
+            (do
+              (when-let [sql-result (first results)]
+                (println "Generated SQL:")
+                (println "  " (:result sql-result))
+                (println))
+              (println "❌ Error executing query:" (:message error))
+              (println)
+              (println "The SQL might be incorrect. Try rephrasing your question."))
+            
+            ;; Error in analysis
+            (= error-agent-index 2)
+            (let [db-result (second results)
+                  query-results (:result db-result)]
+              (println "❌ Error analyzing results:" (:message error))
+              (println)
+              ;; Check if results contain a message field (e.g., from non-database questions)
+              (if (and (= 1 (count query-results))
+                       (map? (first query-results))
+                       (:message (first query-results)))
+                (do
+                  (println)
+                  (print-separator)
+                  (println (:message (first query-results)))
+                  (print-separator))
+                (do
+                  (println "Raw results:")
+                  (doseq [row (take 10 query-results)]
+                    (println row)))))
+            
+            ;; Unknown error
+            :else
+            (do
+              (println "❌ Unexpected error:" (:message error))
+              (println "Please try again.")))))))
 
 (defn handle-input
   "Handle user input and route to appropriate handler."
@@ -251,41 +279,3 @@
     (println "👋 Goodbye! Thanks for using the LLM-powered database chat system.")
     (println)))
 
-;; ============================================================================
-;; Alternative Implementation Using Orchestrator Directly
-;; ============================================================================
-;; This demonstrates using the orchestrator's built-in sequential execution,
-;; which is more concise but provides less visibility into each step.
-;;
-;; To use this instead of the manual step-by-step approach above, replace
-;; the process-question function with this implementation:
-;;
-;; (defn process-question-with-orchestrator
-;;   "Alternative implementation using orchestrator directly."
-;;   [question schema-info]
-;;   (println)
-;;   (println "🤖 Multi-Agent System Processing...")
-;;   (println)
-;;   
-;;   (let [sql-agent (sql-gen/create-sql-generator-agent)
-;;         db-agent (db-exec/create-database-executor-agent)
-;;         analyzer-agent (analyzer/create-result-analyzer-agent)
-;;         orchestrator (agent/create-orchestrator
-;;                       [sql-agent db-agent analyzer-agent]
-;;                       :strategy :sequential)
-;;         initial-context {:schema schema-info}]
-;;     
-;;     ;; Use orchestrator to execute all agents
-;;     (let [result (agent/orchestrate orchestrator question initial-context)]
-;;       (if (= :success (:status result))
-;;         (let [final-result (last (:results result))]
-;;           (println)
-;;           (print-separator)
-;;           (println "📊 Analysis:")
-;;           (println)
-;;           (println (:result final-result))
-;;           (println)
-;;           (print-separator))
-;;         (do
-;;           (println "❌ Error in agent pipeline:" (:error result))
-;;           (println "Please try rephrasing your question."))))))
