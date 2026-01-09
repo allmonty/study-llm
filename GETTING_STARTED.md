@@ -163,6 +163,44 @@ docker compose logs postgres
 docker compose restart postgres
 ```
 
+### "Password authentication failed" Error
+
+If you see an error like `password authentication failed for user "allmonty"` (or any user other than "studyuser"), this means PostgreSQL is trying to use your system username instead of the configured credentials.
+
+**Common causes:**
+1. Environment variables (`PGUSER`, `PGPASSWORD`, `PGHOST`, `PGDATABASE`) are set
+2. A local PostgreSQL installation is running on port 5432
+3. PostgreSQL client configuration in `~/.pgpass` or `~/.pg_service.conf`
+
+**Solutions:**
+
+```bash
+# Option 1: Check and unset PostgreSQL environment variables
+env | grep PG
+unset PGUSER PGPASSWORD PGHOST PGDATABASE PGPORT
+
+# Option 2: Stop local PostgreSQL if running
+sudo systemctl stop postgresql  # Linux
+brew services stop postgresql   # macOS
+
+# Option 3: Check if Docker container is running on correct port
+docker compose ps
+# Make sure study-llm-postgres is running on 0.0.0.0:5432
+
+# Option 4: Verify the container database
+docker exec -it study-llm-postgres psql -U studyuser -d studydb -c "SELECT version();"
+# This should work without password prompt
+
+# Option 5: Restart containers with clean state
+docker compose down
+docker compose up -d
+```
+
+After applying the fix, restart the Clojure application:
+```bash
+clj -M:run
+```
+
 ### "Connection refused" to Ollama
 
 ```bash
