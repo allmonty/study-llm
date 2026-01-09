@@ -7,6 +7,11 @@
             [clojure.tools.logging :as log]))
 
 ;; Ollama API configuration
+;; NOTE: For a learning/study project, configuration is hard-coded for simplicity.
+;; In production, use environment variables or configuration files:
+;;   {:base-url (or (System/getenv "OLLAMA_URL") "http://localhost:11434")
+;;    :model (or (System/getenv "OLLAMA_MODEL") "llama2")
+;;    :timeout (Integer/parseInt (or (System/getenv "OLLAMA_TIMEOUT") "60000"))}
 (def ollama-config
   {:base-url "http://localhost:11434"
    :model "llama2"  ; Default model, can be changed to others like mistral, codellama

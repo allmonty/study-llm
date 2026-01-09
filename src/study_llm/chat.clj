@@ -72,6 +72,7 @@
   (println)
   
   ;; Step 1: Generate SQL from the question
+  ;; NOTE: In production, consider adding a debug mode to control SQL logging
   (println "Step 1: Converting your question to SQL...")
   (let [sql-result (llm/generate-sql-from-question question schema-info)]
     (if (= :success (:status sql-result))

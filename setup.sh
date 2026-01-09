@@ -89,7 +89,7 @@ while [ $attempt -lt $max_attempts ]; do
     attempt=$((attempt + 1))
     if [ $attempt -eq $max_attempts ]; then
         echo "❌ Ollama failed to start within expected time"
-        echo "   Check logs: docker-compose logs ollama"
+        echo "   Check logs: $COMPOSE_CMD logs ollama"
         exit 1
     fi
     sleep 2

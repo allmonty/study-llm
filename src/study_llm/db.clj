@@ -6,6 +6,14 @@
   (:import [com.zaxxer.hikari HikariDataSource]))
 
 ;; Database configuration
+;; NOTE: For a learning/study project, credentials are intentionally hard-coded for simplicity.
+;; In production, use environment variables:
+;;   {:dbtype "postgresql"
+;;    :dbname (System/getenv "DB_NAME")
+;;    :host (System/getenv "DB_HOST")
+;;    :port (Integer/parseInt (System/getenv "DB_PORT"))
+;;    :user (System/getenv "DB_USER")
+;;    :password (System/getenv "DB_PASSWORD")}
 (def db-config
   {:dbtype "postgresql"
    :dbname "studydb"
