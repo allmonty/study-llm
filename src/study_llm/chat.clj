@@ -1,7 +1,9 @@
 (ns study-llm.chat
-  "Terminal-based chat interface for interacting with the LLM-powered database system."
+  "Terminal-based chat interface for interacting with the LLM-powered database system.
+  
+  Updated to use the agent-based orchestrator pattern for better modularity and extensibility."
   (:require [study-llm.db :as db]
-            [study-llm.llm :as llm]
+            [study-llm.orchestrator :as orchestrator]
             [clojure.string :as str]
             [clojure.tools.logging :as log]))
 
@@ -11,14 +13,15 @@
 (defn print-welcome []
   (println)
   (print-separator)
-  (println "  🤖 LLM-Powered Database Chat System")
+  (println "  🤖 LLM-Powered Database Chat System (Agent-Based)")
   (print-separator)
   (println)
   (println "  Welcome! You can ask questions about the database in natural language.")
-  (println "  The system will:")
-  (println "    1. Convert your question to SQL using the LLM")
-  (println "    2. Execute the query against PostgreSQL")
-  (println "    3. Have the LLM analyze and summarize the results")
+  (println "  The system uses an agent-based architecture where:")
+  (println "    1. SQL Agent converts your question to SQL using the LLM")
+  (println "    2. Query Agent executes the query against PostgreSQL")
+  (println "    3. Analysis Agent analyzes and summarizes the results")
+  (println "    4. Orchestrator coordinates all agents seamlessly")
   (println)
   (println "  Example questions:")
   (println "    - What are the top 5 customers by total spent?")
@@ -37,11 +40,11 @@
   (println)
   (println "📖 Help Information:")
   (println)
-  (println "How it works:")
-  (println "  1. You ask a question in plain English")
-  (println "  2. The LLM (Llama2 via Ollama) converts it to SQL")
-  (println "  3. The SQL runs against PostgreSQL database")
-  (println "  4. The LLM analyzes the results and explains them")
+  (println "How it works (using Agent-based Architecture):")
+  (println "  1. SQL Agent: Converts your question to SQL using the LLM")
+  (println "  2. Query Agent: Executes the SQL against PostgreSQL database")
+  (println "  3. Analysis Agent: Analyzes the results and explains them")
+  (println "  4. Orchestrator: Coordinates all agents to work together")
   (println)
   (println "Commands:")
   (println "  exit/quit - Exit the chat")
@@ -65,61 +68,51 @@
     (println)))
 
 (defn process-question
-  "Process a user question by generating SQL, executing it, and analyzing results."
-  [question schema-info]
+  "Process a user question using the agent-based orchestrator.
+  
+  The orchestrator coordinates multiple specialized agents:
+  - SQL Agent: Generates SQL from natural language
+  - Query Agent: Executes the SQL query
+  - Analysis Agent: Analyzes and summarizes results"
+  [question _schema-info]
   (println)
   (println "🤔 Thinking...")
   (println)
   
-  ;; Step 1: Generate SQL from the question
-  ;; NOTE: In production, consider adding a debug mode to control SQL logging
-  (println "Step 1: Converting your question to SQL...")
-  (let [sql-result (llm/generate-sql-from-question question schema-info)]
-    (if (= :success (:status sql-result))
-      (let [sql (:sql sql-result)
-            ;; Clean up SQL - remove markdown formatting if present
-            clean-sql (-> sql
-                         (str/replace #"```sql" "")
-                         (str/replace #"```" "")
-                         str/trim)]
-        (println "Generated SQL:")
-        (println "  " clean-sql)
+  (println "Using agent-based orchestrator to answer your question...")
+  (println)
+  
+  ;; Use the orchestrator to coordinate agents
+  (let [result (orchestrator/answer-question question)]
+    (if (= :success (:status result))
+      (do
+        ;; Success - display the results
+        (println "Step 1: SQL Agent - Generated SQL query")
+        (println "  " (:sql result))
         (println)
         
-        ;; Step 2: Execute the SQL query
-        (println "Step 2: Executing query against database...")
-        (let [query-results (db/execute-query! [clean-sql])]
-          (if (:error query-results)
-            (do
-              (println "❌ Error executing query:" (:error query-results))
-              (println)
-              (println "The SQL might be incorrect. Try rephrasing your question."))
-            (do
-              (println "✅ Query executed successfully!")
-              (println "Found" (count query-results) "result(s)")
-              (println)
-              
-              ;; Step 3: Have LLM analyze the results
-              (println "Step 3: Analyzing results...")
-              (let [analysis-result (llm/analyze-results question query-results)]
-                (if (= :success (:status analysis-result))
-                  (do
-                    (println)
-                    (print-separator)
-                    (println "📊 Analysis:")
-                    (println)
-                    (println (:analysis analysis-result))
-                    (println)
-                    (print-separator))
-                  (do
-                    (println "❌ Error analyzing results:" (:message analysis-result))
-                    (println)
-                    (println "Raw results:")
-                    (doseq [row (take 10 query-results)]
-                      (println row)))))))))
-      (do
-        (println "❌ Error generating SQL:" (:message sql-result))
+        (println "Step 2: Query Agent - Executed query successfully")
+        (println "  Found" (count (:results result)) "result(s)")
         (println)
+        
+        (println "Step 3: Analysis Agent - Analyzed results")
+        (println)
+        (print-separator)
+        (println "📊 Analysis:")
+        (println)
+        (println (:analysis result))
+        (println)
+        (print-separator))
+      
+      ;; Error - display error message
+      (do
+        (println "❌ Error during" (name (:step result)) ":")
+        (println "   " (:message result))
+        (println)
+        (when (:sql result)
+          (println "Generated SQL (before error):")
+          (println "  " (:sql result))
+          (println))
         (println "Please try rephrasing your question or check if Ollama is running.")))))
 
 (defn handle-input
