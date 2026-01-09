@@ -1,6 +1,6 @@
-# LLM-Powered Database Chat System
+# LLM-Powered Database Chat System (Agent-Based Architecture)
 
-A learning project demonstrating how to build a production-ready system that allows users to ask questions about a database in natural language. The system uses an LLM to convert questions to SQL, executes queries against PostgreSQL, and provides AI-powered analysis of the results.
+A learning project demonstrating how to build a production-ready system that allows users to ask questions about a database in natural language. The system uses an **agent-based architecture** inspired by Microsoft's Agentic Framework (Semantic Kernel, AutoGen), with specialized agents coordinating to convert questions to SQL, execute queries against PostgreSQL, and provide AI-powered analysis of the results.
 
 ## 🎯 Project Goals
 
@@ -10,9 +10,14 @@ Learn how to:
 - Run a local LLM (without relying on external APIs)
 - Integrate LLM with structured data (text-to-SQL)
 - Create a terminal-based chat interface
-- Build a production-ready architecture
+- **Build an agent-based architecture following Microsoft Agentic Framework principles**
+- **Implement tool-based agent systems for modularity and extensibility**
 
 ## 🏗️ Architecture
+
+### Agent-Based Design (NEW!)
+
+The system now uses an **agent-based architecture** where specialized agents work together:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -21,20 +26,63 @@ Learn how to:
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Clojure Application (study-llm)                │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │  Chat UI    │  │  LLM Client  │  │   DB Client      │   │
-│  │  (chat.clj) │──│  (llm.clj)   │──│   (db.clj)       │   │
-│  └─────────────┘  └──────────────┘  └──────────────────┘   │
-└────────────┬────────────────┬──────────────────────────────┘
-             │                │
-             ▼                ▼
-┌──────────────────┐  ┌──────────────────┐
-│   Ollama         │  │   PostgreSQL     │
-│   (LLM Runtime)  │  │   (Database)     │
-│   Port: 11434    │  │   Port: 5432     │
-└──────────────────┘  └──────────────────┘
+│                    Chat Interface                            │
+│                     (chat.clj)                               │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Orchestrator Agent                         │
+│                  (orchestrator.clj)                          │
+│  • Coordinates agent execution                               │
+│  • Manages context flow                                      │
+│  • Handles errors and results                                │
+└────┬──────────────┬──────────────┬─────────────────────────┘
+     │              │              │
+     ▼              ▼              ▼
+┌──────────┐  ┌──────────┐  ┌──────────────┐
+│   SQL    │  │  Query   │  │  Analysis    │
+│  Agent   │  │  Agent   │  │   Agent      │
+│          │  │          │  │              │
+│ Converts │  │ Executes │  │  Analyzes    │
+│ Q to SQL │  │   SQL    │  │   Results    │
+└────┬─────┘  └────┬─────┘  └──────┬───────┘
+     │             │               │
+     └─────────────┼───────────────┘
+                   │
+                   ▼
+         ┌──────────────────┐
+         │   Tool Registry   │
+         │   (tools.clj)     │
+         │ • DB Tools        │
+         │ • LLM Tools       │
+         └─────┬────────┬────┘
+               │        │
+               ▼        ▼
+      ┌────────┐   ┌────────┐
+      │Database│   │  LLM   │
+      │(db.clj)│   │(llm.clj│
+      └────────┘   └────────┘
+               │        │
+               ▼        ▼
+          PostgreSQL  Ollama
 ```
+
+**Key Components:**
+- **Orchestrator**: Coordinates multiple agents to answer questions
+- **SQL Agent**: Converts natural language to SQL using LLM
+- **Query Agent**: Executes SQL queries against the database
+- **Analysis Agent**: Analyzes results and provides insights
+- **Tools**: Reusable functions (DB queries, LLM calls) that agents use
+
+**Why Agent-Based?**
+- ✅ **Modularity**: Each agent has a single responsibility
+- ✅ **Testability**: Test agents independently
+- ✅ **Extensibility**: Easy to add new agents/tools
+- ✅ **Maintainability**: Clear boundaries and interfaces
+- ✅ **Reusability**: Tools shared across agents
+
+See **[AGENT_ARCHITECTURE.md](AGENT_ARCHITECTURE.md)** for comprehensive documentation.
 
 ## 🚀 Quick Start
 
@@ -83,22 +131,22 @@ Learn how to:
 
 ### Usage
 
-Once the application starts, you can ask questions in natural language:
+Once the application starts, you can ask questions in natural language. The **agent-based orchestrator** coordinates specialized agents to answer your questions:
 
 ```
 You: What are the top 5 customers by total spent?
 
 🤔 Thinking...
 
-Step 1: Converting your question to SQL...
-Generated SQL:
+Using agent-based orchestrator to answer your question...
+
+Step 1: SQL Agent - Generated SQL query
    SELECT name, total_spent FROM customers ORDER BY total_spent DESC LIMIT 5
 
-Step 2: Executing query against database...
-✅ Query executed successfully!
-Found 5 result(s)
+Step 2: Query Agent - Executed query successfully
+   Found 5 result(s)
 
-Step 3: Analyzing results...
+Step 3: Analysis Agent - Analyzed results
 
 ────────────────────────────────────────────────────────────────────────────────
 📊 Analysis:
@@ -114,8 +162,15 @@ Grace Lee is the highest spending customer with more than $3,000 in total purcha
 ────────────────────────────────────────────────────────────────────────────────
 ```
 
+**Behind the scenes:**
+1. **Orchestrator** receives your question and creates execution context
+2. **SQL Agent** uses the database schema tool and LLM generation tool to create SQL
+3. **Query Agent** uses the database query tool to execute the SQL
+4. **Analysis Agent** uses the LLM generation tool to analyze results
+5. **Orchestrator** returns the final answer to you
+
 Commands:
-- `help` - Show help information
+- `help` - Show help information (includes agent architecture info)
 - `schema` - View database schema
 - `exit` or `quit` - Exit the application
 
@@ -161,8 +216,50 @@ Commands:
 - Context management (passing schema information)
 - Temperature control (0.1 for SQL, 0.3 for analysis)
 - Error handling and retries
+- **Tool-based abstraction for agent use**
+
+#### **Agent-Based Architecture (NEW!)**
+- **Modularity**: Each agent has a single, well-defined responsibility
+- **Microsoft Agentic Framework inspiration**: Implements patterns from Semantic Kernel and AutoGen
+- **Tool abstraction**: Reusable tools that agents can invoke
+- **Orchestration**: Coordinated execution of multiple agents
+- **Context flow**: State and history passed between agents
+- **Production-ready**: Easier to test, maintain, and extend
+
+**Agent architecture concepts:**
+- Agents as autonomous units with specific roles
+- Tools as discrete, reusable functions
+- Orchestrator for planning and coordination
+- Context for maintaining state across agent executions
+- Protocol-based design for extensibility
+
+**Learn more:**
+- Read **[AGENT_ARCHITECTURE.md](AGENT_ARCHITECTURE.md)** for comprehensive documentation
+- See **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** for understanding the refactoring
 
 ### Code Structure Explanation
+
+#### New Agent-Based Components
+
+The application now uses an **agent-based architecture**:
+
+**Core Framework:**
+- `src/study_llm/agent.clj` - Agent and Tool protocols, context management
+- `src/study_llm/tools.clj` - Tool registry (database tools, LLM tools)
+- `src/study_llm/orchestrator.clj` - Orchestrates agent execution
+
+**Specialized Agents:**
+- `src/study_llm/agents/sql_agent.clj` - Converts questions to SQL
+- `src/study_llm/agents/query_agent.clj` - Executes SQL queries
+- `src/study_llm/agents/analysis_agent.clj` - Analyzes and summarizes results
+
+**Updated Components:**
+- `src/study_llm/chat.clj` - Now uses orchestrator instead of direct calls
+
+**Unchanged Components:**
+- `src/study_llm/db.clj` - Database utilities (wrapped by tools)
+- `src/study_llm/llm.clj` - LLM utilities (wrapped by tools)
+- `src/study_llm/core.clj` - Application entry point
 
 #### `deps.edn` - Dependency Management
 ```clojure
@@ -235,16 +332,56 @@ Key patterns:
 
 #### `src/study_llm/chat.clj` - User Interface
 
-Terminal UI patterns:
+**Now uses agent-based orchestrator:**
 ```clojure
-;; Read-eval-print loop
-(loop []
-  (print "You: ")
-  (flush)
-  (when-let [input (read-line)]
-    (process-question input)
-    (recur)))
+(defn process-question [question _schema-info]
+  ;; Use the orchestrator to coordinate agents
+  (let [result (orchestrator/answer-question question)]
+    (if (= :success (:status result))
+      (display-results result)
+      (display-error result))))
 ```
+
+**Before (monolithic):**
+```clojure
+(defn process-question [question schema-info]
+  ;; All steps tightly coupled
+  (let [sql-result (llm/generate-sql-from-question question schema-info)
+        query-results (db/execute-query! [sql])
+        analysis (llm/analyze-results question query-results)]
+    ...))
+```
+
+**Benefits of new approach:**
+- Clear separation of concerns
+- Each step is testable independently
+- Easy to add new steps or modify existing ones
+- Better error handling at each step
+
+#### `src/study_llm/orchestrator.clj` - Agent Coordination (NEW!)
+
+Orchestrator pattern from Microsoft's Agentic Framework:
+```clojure
+(defn orchestrate-question-answering [user-question]
+  ;; Create agents
+  (let [sql-agent (create-sql-agent)
+        query-agent (create-query-agent)
+        analysis-agent (create-analysis-agent)
+        context (create-context)]
+    
+    ;; Execute agents in sequence
+    ;; 1. SQL Agent generates SQL
+    ;; 2. Query Agent executes SQL
+    ;; 3. Analysis Agent analyzes results
+    ;; All coordinated with error handling and context flow
+    ...))
+```
+
+**Key patterns:**
+- Planning: Determining which agents to use
+- Execution: Running agents in coordinated sequence
+- Context management: Passing state between agents
+- Error handling: Graceful failure at each step
 
 #### `src/study_llm/core.clj` - Application Entry Point
 
@@ -571,6 +708,46 @@ docker volume rm study-llm_ollama_data
 - [Use The Index, Luke](https://use-the-index-luke.com/) - SQL indexing
 - [SQL Style Guide](https://www.sqlstyle.guide/)
 
+### Agent Architecture Resources (NEW!)
+- [Microsoft Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/) - Agent framework inspiration
+- [Microsoft AutoGen](https://github.com/microsoft/autogen) - Multi-agent systems
+- [ReAct Pattern](https://arxiv.org/abs/2210.03629) - Reasoning and Acting agents
+- [LangChain Agents](https://python.langchain.com/docs/modules/agents/) - Similar patterns
+- **[AGENT_ARCHITECTURE.md](AGENT_ARCHITECTURE.md)** - Our comprehensive guide
+- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - Understanding the refactoring
+
+## 🔄 Agent-Based Refactoring
+
+This project has been **refactored** to use an agent-based architecture inspired by Microsoft's Agentic Framework (Semantic Kernel and AutoGen).
+
+### What Changed?
+
+**Before**: Monolithic code with tight coupling
+**After**: Modular agents with clear responsibilities
+
+**Key Improvements:**
+- ✅ Better modularity and testability
+- ✅ Easier to extend with new capabilities
+- ✅ Clear separation of concerns
+- ✅ Reusable tools across agents
+- ✅ Production-ready architecture
+
+### Why Agent-Based?
+
+Microsoft's Agentic Framework provides patterns for building AI systems that:
+1. Use specialized agents for different tasks
+2. Employ tools/functions that agents can invoke
+3. Coordinate multiple agents via orchestration
+4. Maintain context and memory across interactions
+
+We implemented these patterns in **idiomatic Clojure** without requiring Python/C# dependencies.
+
+### Learn More
+
+- **[AGENT_ARCHITECTURE.md](AGENT_ARCHITECTURE.md)** - Complete architecture documentation
+- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - Migration guide and FAQ
+- Read the code - it's extensively documented!
+
 ## 🤝 Contributing
 
 This is a learning project. Feel free to:
@@ -579,6 +756,8 @@ This is a learning project. Feel free to:
 - Improve prompts
 - Add features (caching, validation, etc.)
 - Try different databases
+- **Add new agents or tools** (see AGENT_ARCHITECTURE.md)
+- **Improve the orchestration logic**
 
 ## 📝 License
 
@@ -588,14 +767,20 @@ This is a study project for learning purposes.
 
 Ideas to extend this project:
 1. Add a web UI (React + ClojureScript)
-2. Implement query caching
-3. Add support for chart generation
-4. Multi-turn conversations (follow-up questions)
-5. Query explanation (EXPLAIN ANALYZE)
-6. Support for CREATE/UPDATE operations
+2. Implement query caching at the tool level
+3. Add support for chart generation (new agent!)
+4. Multi-turn conversations (conversation agent)
+5. Query explanation (EXPLAIN ANALYZE agent)
+6. Support for CREATE/UPDATE operations (mutation agent)
 7. User authentication
-8. Save conversation history
-9. Export results to CSV/JSON
+8. Save conversation history in context
+9. Export results to CSV/JSON (export agent)
 10. Add more sophisticated prompt engineering
+11. **Parallel agent execution** for independent tasks
+12. **Human-in-the-loop** agent for confirmations
+13. **Validation agent** for SQL safety checks
+14. **Caching agent** for common queries
+
+**Agent architecture makes these extensions easier!** Each new feature can be a new agent or tool.
 
 Happy learning! 🚀
