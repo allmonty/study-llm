@@ -1,0 +1,33 @@
+# Clojure
+.cpcache/
+.nrepl-port
+.rebel_readline_history
+*.class
+/target/
+/checkouts/
+pom.xml
+pom.xml.asc
+*.jar
+*.war
+
+# Development
+.lein-*
+.repl*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.metals/
+.bloop/
+project/metals.sbt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+/tmp/
