@@ -96,6 +96,12 @@
                                            (:columns table)))))
                       schema-info))
        "\n\n"
+       "Table Relationships:\n"
+       "- orders.customer_id → customers.id (each order belongs to a customer)\n"
+       "- order_items.order_id → orders.id (each order item belongs to an order)\n"
+       "- order_items.product_id → products.id (each order item references a product)\n"
+       "Note: order_items does NOT have a customer_id column. To get customer info from order_items, "
+       "you must JOIN through orders table: order_items → orders → customers\n\n"
        "User Question: " user-question "\n\n"
        "SQL Query:"))
 
