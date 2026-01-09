@@ -94,6 +94,10 @@
   This function demonstrates the agentic architecture where specialized agents
   work together to accomplish a complex task (text-to-SQL-to-analysis pipeline).
   
+  NOTE: This implementation manually executes each agent step-by-step to provide
+  clear visibility into the agent workflow for educational purposes. For a more
+  concise implementation, use the orchestrator directly (see commented alternative below).
+  
   Agent Pipeline:
   1. SQL Generator Agent - Converts natural language to SQL
   2. Database Executor Agent - Executes the SQL query
@@ -215,3 +219,42 @@
     (println)
     (println "👋 Goodbye! Thanks for using the LLM-powered database chat system.")
     (println)))
+
+;; ============================================================================
+;; Alternative Implementation Using Orchestrator Directly
+;; ============================================================================
+;; This demonstrates using the orchestrator's built-in sequential execution,
+;; which is more concise but provides less visibility into each step.
+;;
+;; To use this instead of the manual step-by-step approach above, replace
+;; the process-question function with this implementation:
+;;
+;; (defn process-question-with-orchestrator
+;;   "Alternative implementation using orchestrator directly."
+;;   [question schema-info]
+;;   (println)
+;;   (println "🤖 Multi-Agent System Processing...")
+;;   (println)
+;;   
+;;   (let [sql-agent (sql-gen/create-sql-generator-agent)
+;;         db-agent (db-exec/create-database-executor-agent)
+;;         analyzer-agent (analyzer/create-result-analyzer-agent)
+;;         orchestrator (agent/create-orchestrator
+;;                       [sql-agent db-agent analyzer-agent]
+;;                       :strategy :sequential)
+;;         initial-context {:schema schema-info}]
+;;     
+;;     ;; Use orchestrator to execute all agents
+;;     (let [result (agent/orchestrate orchestrator question initial-context)]
+;;       (if (= :success (:status result))
+;;         (let [final-result (last (:results result))]
+;;           (println)
+;;           (print-separator)
+;;           (println "📊 Analysis:")
+;;           (println)
+;;           (println (:result final-result))
+;;           (println)
+;;           (print-separator))
+;;         (do
+;;           (println "❌ Error in agent pipeline:" (:error result))
+;;           (println "Please try rephrasing your question."))))))
