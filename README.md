@@ -508,30 +508,14 @@ docker-compose restart postgres
 
 **"Password authentication failed" for PostgreSQL**
 
-If you see `password authentication failed for user "username"` where username is NOT "studyuser", PostgreSQL is using the wrong credentials.
+**This issue has been fixed** in the latest version. The code now uses an explicit JDBC URL that ignores environment variables like `PGUSER`, `PGPASSWORD`, etc.
 
-Common causes:
-- Environment variables (`PGUSER`, `PGPASSWORD`, etc.) are set
-- Local PostgreSQL running on port 5432
-- PostgreSQL client config in `~/.pgpass`
+If you're using an older version and see this error, the application was picking up your system username. Update to the latest version or manually unset environment variables:
 
-Fix:
 ```bash
-# Unset PostgreSQL environment variables
+# For older versions only:
 unset PGUSER PGPASSWORD PGHOST PGDATABASE PGPORT
-
-# Stop local PostgreSQL if running
-sudo systemctl stop postgresql  # Linux
-brew services stop postgresql   # macOS
-
-# Verify Docker container is using correct port
-docker compose ps
-
-# Test connection to Docker container
-docker exec -it study-llm-postgres psql -U studyuser -d studydb -c "SELECT 1;"
-
-# Restart containers if needed
-docker compose down && docker compose up -d
+clj -M:run
 ```
 
 **"Connection refused" to Ollama**

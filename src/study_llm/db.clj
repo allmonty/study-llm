@@ -7,18 +7,17 @@
 
 ;; Database configuration
 ;; NOTE: For a learning/study project, credentials are intentionally hard-coded for simplicity.
+;; Using explicit JDBC URL to prevent environment variable interference (e.g., PGUSER, PGPASSWORD).
+;; This ensures the connection always uses the configured credentials regardless of the user's
+;; environment settings.
+;;
 ;; In production, use environment variables:
-;;   {:dbtype "postgresql"
-;;    :dbname (System/getenv "DB_NAME")
-;;    :host (System/getenv "DB_HOST")
-;;    :port (Integer/parseInt (System/getenv "DB_PORT"))
+;;   {:jdbcUrl (str "jdbc:postgresql://" (System/getenv "DB_HOST") ":" 
+;;                  (System/getenv "DB_PORT") "/" (System/getenv "DB_NAME"))
 ;;    :user (System/getenv "DB_USER")
 ;;    :password (System/getenv "DB_PASSWORD")}
 (def db-config
-  {:dbtype "postgresql"
-   :dbname "studydb"
-   :host "localhost"
-   :port 5432
+  {:jdbcUrl "jdbc:postgresql://localhost:5432/studydb"
    :user "studyuser"
    :password "studypass"})
 
