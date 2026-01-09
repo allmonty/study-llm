@@ -88,6 +88,26 @@
       (println (str "  - " (:name col) " (" (:type col) ")")))
     (println)))
 
+;; ============================================================================
+;; Agent Instance Management
+;; ============================================================================
+;; Agents are created once and reused to avoid overhead of recreation
+;; (memory stores, configurations, etc.)
+
+(defonce agent-instances
+  "Atom holding singleton agent instances for reuse."
+  (atom {}))
+
+(defn get-or-create-agent
+  "Get an agent from cache or create it if it doesn't exist.
+  This ensures agents are created once and reused."
+  [agent-key create-fn]
+  (if-let [existing-agent (get @agent-instances agent-key)]
+    existing-agent
+    (let [new-agent (create-fn)]
+      (swap! agent-instances assoc agent-key new-agent)
+      new-agent)))
+
 (defn process-question
   "Process a user question using the multi-agent orchestration framework.
   
@@ -98,6 +118,8 @@
   clear visibility into the agent workflow for educational purposes. For a more
   concise implementation, use the orchestrator directly (see commented alternative below).
   
+  NOTE: Agents are created once and cached to avoid overhead on each question.
+  
   Agent Pipeline:
   1. SQL Generator Agent - Converts natural language to SQL
   2. Database Executor Agent - Executes the SQL query
@@ -107,12 +129,12 @@
   (println "🤖 Multi-Agent System Processing...")
   (println)
   
-  ;; Create specialized agents
-  (let [sql-agent (sql-gen/create-sql-generator-agent)
-        db-agent (db-exec/create-database-executor-agent)
-        analyzer-agent (analyzer/create-result-analyzer-agent)
+  ;; Get or create specialized agents (cached for reuse)
+  (let [sql-agent (get-or-create-agent :sql-generator sql-gen/create-sql-generator-agent)
+        db-agent (get-or-create-agent :database-executor db-exec/create-database-executor-agent)
+        analyzer-agent (get-or-create-agent :result-analyzer analyzer/create-result-analyzer-agent)
         
-        ;; Create orchestrator to coordinate agents
+        ;; Create orchestrator (note: not used in this implementation, see alternative below)
         orchestrator (agent/create-orchestrator
                       [sql-agent db-agent analyzer-agent]
                       :strategy :sequential)
