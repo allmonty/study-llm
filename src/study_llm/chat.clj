@@ -225,7 +225,7 @@
             :else
             (do
               (println "❌ Unexpected error:" (:message error))
-              (println "Please try again.")))))))
+              (println "Please try again."))))))))
 
 (defn handle-input
   "Handle user input and route to appropriate handler."
