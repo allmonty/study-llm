@@ -7,19 +7,20 @@
 
 ;; Database configuration
 ;; NOTE: For a learning/study project, credentials are intentionally hard-coded for simplicity.
-;; Using explicit JDBC URL to prevent environment variable interference (e.g., PGUSER, PGPASSWORD).
-;; This ensures the connection always uses the configured credentials regardless of the user's
-;; environment settings.
+;; Using explicit JDBC URL with embedded credentials to completely bypass environment variables.
+;; This ensures the connection always uses the configured credentials regardless of any
+;; PGUSER, PGPASSWORD, PGHOST, or other PostgreSQL environment variables.
+;;
+;; The credentials are embedded in the URL to prevent HikariCP from checking environment
+;; variables during connection initialization.
 ;;
 ;; In production, use environment variables:
 ;;   {:jdbcUrl (str "jdbc:postgresql://" (System/getenv "DB_HOST") ":" 
-;;                  (System/getenv "DB_PORT") "/" (System/getenv "DB_NAME"))
-;;    :user (System/getenv "DB_USER")
-;;    :password (System/getenv "DB_PASSWORD")}
+;;                  (System/getenv "DB_PORT") "/" (System/getenv "DB_NAME")
+;;                  "?user=" (System/getenv "DB_USER")
+;;                  "&password=" (System/getenv "DB_PASSWORD"))}
 (def db-config
-  {:jdbcUrl "jdbc:postgresql://localhost:5432/studydb"
-   :user "studyuser"
-   :password "studypass"})
+  {:jdbcUrl "jdbc:postgresql://localhost:5432/studydb?user=studyuser&password=studypass"})
 
 ;; Connection pool (HikariCP for production-grade connection pooling)
 (defonce datasource (atom nil))
