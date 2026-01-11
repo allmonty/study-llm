@@ -14,9 +14,12 @@
   (agent/create-tool
     :execute-query
     "Executes SQL queries against PostgreSQL database"
-    (fn [sql context]
+    (fn [_ context]
       (log/info "Executing SQL query")
-      (let [result (db/execute-query! sql)]
+      ;; Get SQL from context - either from previous-result or generated-sql
+      (let [sql (or (:previous-result context) 
+                    (:generated-sql context))
+            result (db/execute-query! sql)]
         (if (:error result)
           {:status :error
            :message (:error result)
