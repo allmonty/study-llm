@@ -16,7 +16,7 @@
     "Executes SQL queries against PostgreSQL database"
     (fn [sql context]
       (log/info "Executing SQL query")
-      (let [result (db/execute-query! [sql])]
+      (let [result (db/execute-query! sql)]
         (if (:error result)
           {:status :error
            :message (:error result)
