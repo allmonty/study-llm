@@ -77,9 +77,19 @@ User Question → Orchestrator → [SQL Agent → DB Agent → Analyzer Agent] �
 6. **Production-Ready**: Pure Clojure is easier to deploy and maintain
 
 **Inspired By**:
-- Microsoft Semantic Kernel's plugin and planner architecture
-- Microsoft AutoGen's multi-agent conversation patterns
-- LangChain's tool abstraction (but simplified)
+- **Microsoft Semantic Kernel**: Plugin and planner architecture, memory management
+- **Microsoft AutoGen**: Multi-agent conversation patterns, agent coordination
+- **LangChain**: Tool/function abstraction, sequential chains (simplified)
+- **LangGraph**: State-based workflows, multi-agent orchestration concepts
+
+**Pattern Convergence**: Despite different implementations, all successful agentic frameworks converge on similar core patterns:
+- Composable units (agents/chains/nodes)
+- Tool/function abstraction
+- State/context management
+- Sequential and parallel execution
+- Memory for conversation history
+
+Our framework demonstrates these universal patterns in a Clojure-native implementation.
 
 ## Architecture Components
 
@@ -242,23 +252,37 @@ Final Output to User
 
 ## Comparison with Other Frameworks
 
-| Feature | Our Framework | Semantic Kernel | AutoGen | LangChain |
-|---------|--------------|-----------------|---------|-----------|
-| Language | Clojure | C#/Python/Java | Python | Python/JS |
-| JVM Native | ✅ | ⚠️ (Java only) | ❌ | ❌ |
-| Multi-Agent | ✅ | ✅ | ✅ | ✅ |
-| Memory | ✅ | ✅ | ✅ | ✅ |
-| Planning | 🚧 Future | ✅ | ✅ | ✅ |
-| Tool Registry | ✅ | ✅ (Plugins) | ✅ | ✅ |
-| Functional | ✅ | ⚠️ | ❌ | ❌ |
-| Dependencies | Low | High | High | Very High |
-| Learning Curve | Low | Medium | Medium | High |
+| Feature | Our Framework | Semantic Kernel | AutoGen | LangChain | LangGraph |
+|---------|--------------|-----------------|---------|-----------|-----------|
+| Language | Clojure | C#/Python/Java | Python | Python/JS | Python |
+| JVM Native | ✅ | ⚠️ (Java only) | ❌ | ❌ | ❌ |
+| Multi-Agent | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Memory | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Planning | 🚧 Future | ✅ | ✅ | ✅ | ✅ |
+| Tool Registry | ✅ | ✅ (Plugins) | ✅ | ✅ | ✅ |
+| Functional | ✅ | ⚠️ | ❌ | ⚠️ | ⚠️ |
+| Dependencies | Low | High | High | Very High | High |
+| Learning Curve | Low | Medium | Medium | High | Medium |
+| Graph Workflows | 🚧 Future | ⚠️ | ❌ | ❌ | ✅ |
+| Persistence | 🚧 Future | ✅ | ⚠️ | ⚠️ | ✅ |
+| Cycles/Loops | 🚧 Future | ⚠️ | ⚠️ | ❌ | ✅ |
 
 Legend:
 - ✅ Fully supported
 - ⚠️ Partial support
 - ❌ Not supported
 - 🚧 Planned
+
+### Detailed Framework Comparisons
+
+For in-depth comparisons with LangChain and LangGraph, including:
+- Architecture pattern mappings
+- Code examples side-by-side
+- Tool/agent system comparisons
+- Orchestration pattern differences
+- State management approaches
+
+See **[LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md)**
 
 ## Performance Considerations
 
@@ -411,7 +435,19 @@ The framework demonstrates that you don't need heavyweight external frameworks t
 
 ## References
 
-- [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel)
-- [Microsoft AutoGen](https://github.com/microsoft/autogen)
-- [Agentic AI Patterns](https://learn.microsoft.com/en-us/semantic-kernel/overview/)
-- [Building AI Agents](https://www.microsoft.com/en-us/research/project/autogen/)
+### Primary Frameworks
+- [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel) - Plugin and planner architecture
+- [Microsoft AutoGen](https://github.com/microsoft/autogen) - Multi-agent conversations
+- [LangChain](https://github.com/langchain-ai/langchain) - Tool abstraction and chains
+- [LangGraph](https://github.com/langchain-ai/langgraph) - Graph-based multi-agent workflows
+
+### Documentation
+- [Semantic Kernel Overview](https://learn.microsoft.com/en-us/semantic-kernel/overview/)
+- [AutoGen Research](https://www.microsoft.com/en-us/research/project/autogen/)
+- [LangChain Documentation](https://python.langchain.com/docs/)
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
+
+### Related Documents
+- [LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md) - Detailed comparison with LangChain and LangGraph
+- [REFACTORING_DECISIONS.md](REFACTORING_DECISIONS.md) - Framework selection rationale
+- [README.md](README.md) - Project overview and usage

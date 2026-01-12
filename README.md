@@ -218,16 +218,30 @@ This Clojure-native framework is inspired by:
    - Specialized agent roles
    - Collaborative problem solving
 
+3. **LangChain**
+   - Tool/function abstraction
+   - Sequential chains
+   - Composable components
+
+4. **LangGraph**
+   - Graph-based workflows
+   - Multi-agent orchestration
+   - State management patterns
+
 **Why not use those frameworks directly?**
 - Semantic Kernel: No official Clojure support (C#/Python/Java)
 - AutoGen: Python-only implementation
+- LangChain/LangGraph: Python/JavaScript focused, heavy dependencies
 - **Our Solution**: Native Clojure implementation with:
   - No bridge overhead (pure JVM)
   - Functional programming patterns
   - Full control and customization
   - Educational value (learn agentic principles)
+  - Minimal dependencies
 
-See [AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md) for detailed architecture documentation.
+**Pattern Convergence**: All successful agentic frameworks share core patterns—our implementation demonstrates these universal principles in Clojure.
+
+See [AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md) for detailed architecture documentation and [LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md) for in-depth comparisons with LangChain and LangGraph.
 
 ### Why These Technologies?
 
@@ -853,10 +867,14 @@ docker volume rm study-llm_ollama_data
 
 ### Agentic AI Resources
 - **[AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md)** - Detailed documentation of our framework
+- **[LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md)** - How our architecture compares to LangChain and LangGraph
 - [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel) - Official Microsoft framework
 - [Microsoft AutoGen](https://github.com/microsoft/autogen) - Multi-agent conversation framework
+- [LangChain](https://github.com/langchain-ai/langchain) - Python/JS framework for LLM applications
+- [LangGraph](https://github.com/langchain-ai/langgraph) - Graph-based multi-agent workflows
 - [Semantic Kernel Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
-- [Building AI Agents](https://www.microsoft.com/en-us/research/project/autogen/)
+- [LangChain Documentation](https://python.langchain.com/docs/)
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 
 ### Clojure Resources
 - [Clojure for the Brave and True](https://www.braveclojure.com/) - Free book

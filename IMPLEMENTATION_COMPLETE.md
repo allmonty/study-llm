@@ -106,6 +106,10 @@
 - **Issue**: Heavy dependencies, limited Clojure support
 - **Impact**: Complexity not justified for this project
 
+#### ❌ LangGraph
+- **Issue**: Python-only, requires LangChain
+- **Impact**: No Clojure support, though graph patterns are valuable
+
 ### ✅ Decision: Clojure-Native Framework
 
 **Reasoning**:
@@ -119,7 +123,11 @@
 **Inspiration**:
 - Microsoft Semantic Kernel's plugin and planner patterns
 - Microsoft AutoGen's multi-agent conversation model
+- LangChain's tool abstraction and sequential chains
+- LangGraph's state management and multi-agent orchestration
 - Pure functional programming principles
+
+**Pattern Alignment**: Our implementation shares core architectural patterns with all these frameworks, demonstrating universal principles.
 
 ---
 
@@ -309,13 +317,13 @@ These are optimizations, not critical issues, and are documented for future enha
 
 This refactoring successfully transforms the study-llm project into a **production-ready multi-agent AI system** while:
 
-1. **Honoring Microsoft's agentic principles** (Semantic Kernel, AutoGen)
+1. **Honoring agentic principles** from Microsoft (Semantic Kernel, AutoGen), LangChain, and LangGraph
 2. **Leveraging Clojure's strengths** (functional, JVM, simple)
 3. **Maintaining complete backward compatibility**
 4. **Providing exceptional educational value**
 5. **Delivering comprehensive documentation**
 
-The implementation demonstrates that understanding framework principles is more valuable than blindly using frameworks, and that sometimes building a tailored solution is better than forcing a one-size-fits-all approach.
+The implementation demonstrates that understanding framework principles is more valuable than blindly using frameworks, and that sometimes building a tailored solution is better than forcing a one-size-fits-all approach. All successful agentic frameworks converge on similar patterns—our implementation proves these patterns are universal.
 
 **Result**: A clean, functional, well-documented agentic framework that serves as both a production-ready implementation and an excellent learning resource.
 
@@ -324,6 +332,7 @@ The implementation demonstrates that understanding framework principles is more 
 ## 📖 Documentation Index
 
 - **[AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md)** - Technical framework details
+- **[LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md)** - Comparison with LangChain and LangGraph
 - **[REFACTORING_DECISIONS.md](REFACTORING_DECISIONS.md)** - Decision rationale
 - **[ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md)** - Visual diagrams
 - **[README.md](README.md)** - Updated project documentation

@@ -44,11 +44,13 @@ We have successfully refactored the study-llm codebase to use a **Clojure-native
 **Verdict**: ❌ Not suitable due to Python-only implementation
 
 ### LangChain
-**What it is**: Popular third-party framework (not Microsoft, but widely used)
+**What it is**: Popular third-party framework for building LLM applications (Python/JavaScript)
 
 **Pros**:
 - Comprehensive tooling
 - Large community
+- Rich ecosystem of integrations
+- Sequential chains pattern
 
 **Cons**:
 - Python/JavaScript focused
@@ -57,6 +59,23 @@ We have successfully refactored the study-llm codebase to use a **Clojure-native
 - More complex than needed for this project
 
 **Verdict**: ❌ Not suitable due to complexity and lack of Clojure support
+
+### LangGraph
+**What it is**: Graph-based framework for multi-agent workflows (built on LangChain)
+
+**Pros**:
+- Excellent for complex workflows
+- Built-in persistence and checkpointing
+- Support for cycles and conditional routing
+- Visual workflow debugging
+
+**Cons**:
+- Python-only implementation
+- Requires LangChain dependency
+- Overkill for linear workflows
+- No Clojure support
+
+**Verdict**: ❌ Not suitable due to Python-only implementation, though patterns are valuable for future enhancements
 
 ## Final Decision: Clojure-Native Agentic Framework
 
@@ -178,17 +197,53 @@ User → Orchestrator → [SQL Agent → DB Agent → Analyzer Agent]
 - Monitor performance per agent
 - Debug agent interactions
 
-## Microsoft Framework Alignment
+## Framework Alignment
 
-Our implementation aligns with Microsoft's frameworks:
+Our implementation aligns with multiple established frameworks, demonstrating universal agentic patterns:
 
-| Concept | Semantic Kernel | AutoGen | Our Framework |
-|---------|----------------|---------|---------------|
-| Agent Abstraction | Plugins | Agents | Agent Protocol |
-| Tools | Skills/Functions | Functions | Tools |
-| Orchestration | Planner | GroupChat | Orchestrator |
-| Memory | Memory | N/A | Memory |
-| Context | Variables | Context | Context Maps |
+### Comparison Table
+
+| Concept | Semantic Kernel | AutoGen | LangChain | LangGraph | Our Framework |
+|---------|----------------|---------|-----------|-----------|---------------|
+| Agent Abstraction | Plugins | Agents | Chains/Agents | Nodes | Agent Protocol |
+| Tools | Skills/Functions | Functions | Tools | Tools | Tools |
+| Orchestration | Planner | GroupChat | SequentialChain | StateGraph | Orchestrator |
+| Memory | Memory | N/A | Memory | Checkpoints | Memory |
+| Context | Variables | Context | Variables | State | Context Maps |
+| Workflow | Sequential | Multi-turn | Chains/LCEL | Graph (DAG) | Sequential/Parallel |
+
+### Architectural Patterns Shared
+
+**With Microsoft Frameworks (Semantic Kernel, AutoGen)**:
+- Agent abstraction and protocols
+- Tool/plugin system
+- Memory management
+- Orchestration patterns
+
+**With LangChain**:
+- Tool/function abstraction
+- Sequential execution chains
+- Composable components
+- Memory for conversation history
+
+**With LangGraph**:
+- Multi-agent coordination
+- Explicit state management
+- Node-based execution units
+- Context passing between steps
+
+### Pattern Convergence
+
+Despite implementation differences, all frameworks converge on:
+1. **Composable Units**: Agents, chains, or nodes
+2. **Tool Abstraction**: Reusable capabilities
+3. **State Flow**: Context/state passed through pipeline
+4. **Modularity**: Single-responsibility components
+5. **Orchestration**: Coordinating multiple steps
+
+**Key Insight**: Successful agentic frameworks share the same core architectural patterns. Our Clojure implementation proves these patterns are language-agnostic and can be adapted to any ecosystem.
+
+For detailed comparisons with code examples, see **[LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md)**.
 
 ## Code Changes Summary
 
@@ -240,33 +295,45 @@ While not implemented in this phase (to minimize changes), the recommended testi
 🚧 Multi-model support
 🚧 Agent monitoring
 🚧 Performance metrics
+🚧 Graph-based workflows (LangGraph-style)
+🚧 Conditional routing
 
 ## Learning Outcomes
 
 This refactoring demonstrates:
 
-1. **How to apply Microsoft's agentic principles in any language**
+1. **How to apply agentic principles across frameworks** (Microsoft, LangChain, LangGraph)
 2. **How to build multi-agent systems from scratch**
 3. **The value of functional programming for agents**
 4. **Production-ready patterns for AI systems**
 5. **How to make architectural decisions with trade-offs**
+6. **Pattern convergence across different frameworks**
 
 ## Conclusion
 
 We successfully implemented an agentic framework that:
 - ✅ Follows Microsoft Semantic Kernel and AutoGen principles
+- ✅ Shares architectural patterns with LangChain and LangGraph
 - ✅ Is implemented natively in Clojure
 - ✅ Maintains all original functionality
 - ✅ Provides better modularity and maintainability
 - ✅ Enables future enhancements
 - ✅ Serves as an excellent learning resource
 
-The decision to build our own framework rather than force-fitting existing frameworks was the right choice for this project. It demonstrates that understanding the principles behind frameworks (like Microsoft's) is more valuable than blindly using them, and that sometimes building a tailored solution is better than adopting a one-size-fits-all framework.
+The decision to build our own framework rather than force-fitting existing frameworks was the right choice for this project. It demonstrates that understanding the principles behind frameworks (Microsoft's, LangChain, LangGraph) is more valuable than blindly using them, and that sometimes building a tailored solution is better than adopting a one-size-fits-all framework.
+
+**Key Insight**: All successful agentic frameworks converge on similar patterns—agents/chains/nodes, tools, state management, and orchestration. Our implementation proves these are universal patterns applicable in any language.
 
 ## References
 
+### Framework Documentation
 - [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel)
 - [Microsoft AutoGen](https://github.com/microsoft/autogen)
+- [LangChain](https://github.com/langchain-ai/langchain)
+- [LangGraph](https://github.com/langchain-ai/langgraph)
+
+### Project Documentation
+- [LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md) - Detailed comparison with LangChain/LangGraph
 - [AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md) - Detailed technical documentation
 - [README.md](README.md) - Updated project documentation
 
