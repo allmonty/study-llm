@@ -52,13 +52,17 @@
 
 (defn execute-query!
   "Execute a SQL query and return results.
-  This is a wrapper around next.jdbc/execute! for convenience."
-  [sql-vec]
+  This is a wrapper around next.jdbc/execute! for convenience.
+  Accepts either a SQL string or a vector [sql & params] for parameterized queries."
+  [sql-or-vec]
   (try
-    (let [ds (get-datasource)]
-      (jdbc/execute! ds sql-vec))
+    (let [ds (get-datasource)
+          ;; If it's a string, wrap it in a vector for jdbc/execute!
+          ;; If it's already a vector, use as-is
+          query-vec (if (string? sql-or-vec) [sql-or-vec] sql-or-vec)]
+      (jdbc/execute! ds query-vec))
     (catch Exception e
-      (log/error e "Error executing query:" sql-vec)
+      (log/error e "Error executing query:" sql-or-vec)
       {:error (.getMessage e)})))
 
 (defn get-schema-info

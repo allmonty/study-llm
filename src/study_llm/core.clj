@@ -1,5 +1,14 @@
 (ns study-llm.core
-  "Main entry point for the LLM-powered database chat application."
+  "Main entry point for the LLM-powered database chat application.
+  
+  This application now uses a multi-agent architecture inspired by Microsoft
+  Semantic Kernel and AutoGen frameworks, but implemented natively in Clojure.
+  
+  Architecture:
+  - Agent Framework: Provides abstractions for agents, tools, and orchestration
+  - Specialized Agents: SQL Generator, Database Executor, Result Analyzer
+  - Orchestrator: Coordinates agents to accomplish complex tasks
+  - Memory: Maintains conversation context across interactions"
   (:require [study-llm.db :as db]
             [study-llm.llm :as llm]
             [study-llm.chat :as chat]
@@ -68,8 +77,8 @@
   [& args]
   (println)
   (println "╔════════════════════════════════════════════════════════════╗")
-  (println "║   LLM-Powered Database Chat System - Study Project        ║")
-  (println "║   Using: Clojure + PostgreSQL + Ollama (Local LLM)        ║")
+  (println "║   LLM-Powered Database Chat - Multi-Agent Architecture    ║")
+  (println "║   Clojure + PostgreSQL + Ollama + Agentic Framework       ║")
   (println "╚════════════════════════════════════════════════════════════╝")
   (println)
   
@@ -80,6 +89,10 @@
   (when (ensure-model-available)
     (println)
     (println "✅ All systems ready!")
+    (println "🤖 Multi-agent system initialized with:")
+    (println "   - SQL Generator Agent")
+    (println "   - Database Executor Agent")
+    (println "   - Result Analyzer Agent")
     (println)
     
     ;; Start the chat interface

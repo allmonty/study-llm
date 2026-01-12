@@ -85,6 +85,11 @@
   (str "You are a SQL expert. Given the following database schema and a user question, "
        "generate a SQL query that answers the question. "
        "Return ONLY the SQL query, nothing else. No explanations, no markdown formatting.\n\n"
+       "IMPORTANT RULES:\n"
+       "1. If the question is not related to the database (e.g., greetings like 'Hello'), return: SELECT 'I can help you query the database. Please ask a question about customers, products, or orders.' AS message\n"
+       "2. All columns in SELECT must either be in GROUP BY or use an aggregate function (COUNT, SUM, AVG, etc.)\n"
+       "3. Use proper PostgreSQL syntax\n"
+       "4. Always use table aliases for clarity\n\n"
        "Database Schema:\n"
        (str/join "\n"
                  (map (fn [table]
