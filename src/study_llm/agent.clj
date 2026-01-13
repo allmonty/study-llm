@@ -10,7 +10,8 @@
   - Tool: A function that an agent can invoke to accomplish tasks
   - Orchestrator: Coordinates multiple agents to accomplish complex goals
   - Memory: Maintains context and conversation history across interactions"
-  (:require [clojure.tools.logging :as log]))
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as str]))
 
 ;; ============================================================================
 ;; Agent Protocol
@@ -94,15 +95,58 @@
 ;; Agent Implementations
 ;; ============================================================================
 
+(defn select-tool
+  "Select the appropriate tool based on input and available tools.
+  
+  Selection strategies:
+  - :primary - Use the configured primary tool (default)
+  - :keyword - Match keywords in input to tool names/descriptions
+  - :llm - Use LLM to decide which tool to use (future enhancement)
+  - :function - Use a custom function to select the tool"
+  [tools input context config]
+  (let [strategy (or (:tool-selection-strategy config) :primary)]
+    (case strategy
+      :primary
+      ;; Use the configured primary tool or first tool
+      (let [primary-key (or (:primary-tool config) (first (keys tools)))]
+        (get tools primary-key))
+      
+      :keyword
+      ;; Select tool based on keyword matching in input
+      (let [input-lower (str/lower-case (str input))
+            matching-tool (first
+                          (filter
+                           (fn [[tool-key tool]]
+                             (let [tool-name (str/lower-case (name tool-key))
+                                   tool-desc (str/lower-case (or (:description tool) ""))]
+                               (or (str/includes? input-lower tool-name)
+                                   (some #(str/includes? input-lower %)
+                                         (str/split tool-desc #"\s+")))))
+                           tools))]
+        (if matching-tool
+          (second matching-tool)
+          ;; Fallback to primary tool if no match
+          (get tools (or (:primary-tool config) (first (keys tools))))))
+      
+      :function
+      ;; Use a custom selection function
+      (if-let [select-fn (:tool-selector-fn config)]
+        (select-fn tools input context)
+        ;; Fallback to primary
+        (get tools (or (:primary-tool config) (first (keys tools)))))
+      
+      ;; Default to primary strategy
+      (get tools (or (:primary-tool config) (first (keys tools)))))))
+
 (defrecord LLMAgent [name description tools memory config]
   Agent
   (execute [this input context]
     (log/info "LLMAgent executing:" name)
-    ;; Get the primary tool (first tool in the map, or a specific tool if configured)
-    (let [primary-tool-key (or (:primary-tool config) (first (keys tools)))
-          tool-fn (get tools primary-tool-key)
+    ;; Select the appropriate tool based on configuration
+    (let [tool-fn (select-tool tools input context config)
           result (if tool-fn
-                   (invoke-tool tool-fn input context)
+                   (let [tool-result (invoke-tool tool-fn input context)]
+                     (assoc tool-result :tool-used (:name tool-fn)))
                    {:status :error
                     :message (str "No tool found for agent " name ". Available tools: " (keys tools))})]
       ;; Store interaction in memory
@@ -130,11 +174,11 @@
   Agent
   (execute [this input context]
     (log/info "DatabaseAgent executing:" name)
-    ;; Get the primary tool (first tool in the map, or a specific tool if configured)
-    (let [primary-tool-key (or (:primary-tool config) (first (keys tools)))
-          tool-fn (get tools primary-tool-key)
+    ;; Select the appropriate tool based on configuration
+    (let [tool-fn (select-tool tools input context config)
           result (if tool-fn
-                   (invoke-tool tool-fn input context)
+                   (let [tool-result (invoke-tool tool-fn input context)]
+                     (assoc tool-result :tool-used (:name tool-fn)))
                    {:status :error
                     :message (str "No tool found for agent " name ". Available tools: " (keys tools))})]
       ;; Store interaction in memory

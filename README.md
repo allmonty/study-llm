@@ -905,6 +905,37 @@ This is a learning project. Feel free to:
 - Create new tools for existing agents
 - Try different databases
 
+### Multi-Tool Agent Selection (NEW! ✨)
+
+**Can agents decide between multiple tools?** Yes! Agents can now intelligently select the right tool based on input and context.
+
+See the **[examples/](examples/)** directory for demonstrations of:
+- **Keyword-based selection**: Agent matches keywords in input to tool descriptions
+- **Custom function selection**: Agent uses custom logic to choose tools
+- **Context-aware selection**: Agent examines context to make decisions
+
+Example:
+```clojure
+;; Create an agent with multiple tools
+(def math-agent (create-math-agent))
+
+;; The agent automatically selects the right tool:
+(execute math-agent "add 5 and 3" {...})      ; Uses :add tool
+(execute math-agent "multiply 4 by 7" {...})  ; Uses :multiply tool
+(execute math-agent "divide 100 by 5" {...})  ; Uses :divide tool
+```
+
+**Where does the "intelligence" come from?**
+- The agent's tool selection mechanism, not just the tools themselves
+- Available strategies: `:keyword`, `:function`, `:primary` (default)
+
+Run the example:
+```bash
+clj -M -m examples.multi-tool-agent
+```
+
+For more details, see [examples/README.md](examples/README.md).
+
 ## 📝 License
 
 This is a study project for learning purposes.
