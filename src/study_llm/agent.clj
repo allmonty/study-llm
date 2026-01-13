@@ -123,6 +123,9 @@
 (defn select-tool-with-llm
   "Use the LLM to select the appropriate tool based on input and context."
   [tools input context config]
+  (when (empty? tools)
+    (throw (ex-info "Cannot select tool: no tools available" {:input input})))
+  
   (log/info "Using LLM to select tool for input:" input)
   (let [prompt (create-tool-selection-prompt tools input context)
         llm-result (llm/generate-completion prompt :temperature 0.1)
