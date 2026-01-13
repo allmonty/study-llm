@@ -66,19 +66,27 @@
   []
   (agent/create-tool
     :execute-sql
-    "Executes SQL queries against the PostgreSQL database and returns the results"
+    "Executes SELECT SQL queries against the PostgreSQL database and returns the results"
     (fn [input context]
       (log/info "Executing SQL query from user input")
-      ;; Extract SQL from input - look for SQL-like patterns
-      (let [sql-pattern #"(?i)(?:execute|run|query)?[\s:]*([SELECT|INSERT|UPDATE|DELETE].*)"
+      ;; Extract SQL from input - look for SQL-like patterns (SELECT only for safety)
+      (let [sql-pattern #"(?i)(?:execute|run|query)?[\s:]*(SELECT.*)"
             sql-match (re-find sql-pattern input)
             sql (if sql-match
                   (str/trim (second sql-match))
                   ;; If no SQL found in input, check context
                   (or (:sql context) (:generated-sql context)))
-            result (if sql
-                     (db/execute-query! sql)
-                     {:error "No SQL query found in input or context"})]
+            ;; Validate that it's a SELECT query only (security)
+            is-select (and sql (re-find #"(?i)^\s*SELECT" sql))
+            result (cond
+                     (not sql)
+                     {:error "No SQL query found in input or context"}
+                     
+                     (not is-select)
+                     {:error "Only SELECT queries are allowed for security reasons"}
+                     
+                     :else
+                     (db/execute-query! sql))]
         (if (:error result)
           {:status :error
            :message (:error result)
