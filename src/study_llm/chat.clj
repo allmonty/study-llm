@@ -4,11 +4,13 @@
   This module now uses the agentic framework to orchestrate specialized agents:
   - SQL Generator Agent: Converts questions to SQL
   - Database Executor Agent: Executes queries
-  - Result Analyzer Agent: Interprets and explains results"
+  - Result Analyzer Agent: Interprets and explains results
+  - Query Assistant Agent: Multi-tool agent with LLM-based tool selection"
   (:require [study-llm.agent :as agent]
             [study-llm.agents.sql-generator :as sql-gen]
             [study-llm.agents.database-executor :as db-exec]
             [study-llm.agents.result-analyzer :as analyzer]
+            [study-llm.agents.query-assistant :as assistant]
             [study-llm.db :as db]
             [clojure.string :as str]
             [clojure.tools.logging :as log]))
@@ -26,6 +28,7 @@
   (println "    • SQL Generator Agent - Converts questions to SQL")
   (println "    • Database Executor Agent - Runs queries safely")
   (println "    • Result Analyzer Agent - Interprets and explains data")
+  (println "    • Query Assistant Agent - Multi-tool agent (NEW! ✨)")
   (println)
   (println "  The agents coordinate through an orchestrator for complex tasks.")
   (println)
@@ -38,6 +41,7 @@
   (println "  Type 'exit' or 'quit' to leave")
   (println "  Type 'schema' to see the database structure")
   (println "  Type 'help' for more information")
+  (println "  Type 'assistant' to use the multi-tool Query Assistant (NEW! ✨)")
   (println)
   (print-separator)
   (println))
@@ -67,10 +71,22 @@
   (println "  The orchestrator coordinates these agents in sequence,")
   (println "  passing context between them for optimal results.")
   (println)
+  (println "NEW! Query Assistant Agent:")
+  (println "  Type 'assistant' to use the multi-tool Query Assistant.")
+  (println "  This agent uses LLM to intelligently select between tools:")
+  (println "    - Help: Get guidance on using the system")
+  (println "    - Schema: View database structure")
+  (println "    - Stats: See database statistics")
+  (println "    - Execute: Run SQL queries")
+  (println)
+  (println "  Example: Type 'assistant' then ask 'show me the schema'")
+  (println "  The LLM will automatically choose the right tool!")
+  (println)
   (println "Commands:")
-  (println "  exit/quit - Exit the chat")
-  (println "  schema    - View database schema")
-  (println "  help      - Show this help message")
+  (println "  exit/quit  - Exit the chat")
+  (println "  schema     - View database schema")
+  (println "  help       - Show this help message")
+  (println "  assistant  - Use the Query Assistant (multi-tool agent)")
   (println)
   (println "Tips:")
   (println "  - Be specific in your questions")
@@ -227,6 +243,65 @@
               (println "❌ Unexpected error:" (:message error))
               (println "Please try again."))))))))
 
+(defn assistant-mode
+  "Interactive mode using the Query Assistant multi-tool agent.
+  
+  This demonstrates the LLM-based tool selection capability where the agent
+  intelligently chooses the right tool based on the user's natural language input."
+  []
+  (println)
+  (print-separator)
+  (println "🤖 Query Assistant Mode (Multi-Tool Agent)")
+  (print-separator)
+  (println)
+  (println "I'm the Query Assistant! I can help you with:")
+  (println "  • Getting help and guidance")
+  (println "  • Viewing the database schema")
+  (println "  • Seeing database statistics")
+  (println "  • Executing SQL queries")
+  (println)
+  (println "I use LLM to understand what you want and choose the right tool!")
+  (println "Type 'back' to return to the main chat.")
+  (println)
+  
+  ;; Create the assistant agent once
+  (let [query-assistant (assistant/create-query-assistant-agent)]
+    (loop []
+      (print "Assistant> ")
+      (flush)
+      (when-let [input (read-line)]
+        (let [trimmed (str/trim input)
+              lower (str/lower-case trimmed)]
+          (cond
+            (or (= lower "exit") (= lower "quit") (= lower "back"))
+            (do
+              (println "Returning to main chat...")
+              (println))
+            
+            (str/blank? trimmed)
+            (recur)
+            
+            :else
+            (do
+              (println)
+              (println "🤖 Query Assistant analyzing your request...")
+              (println)
+              
+              ;; Execute the agent - it will use LLM to select the right tool
+              (let [result (agent/execute query-assistant trimmed {})]
+                (if (= :success (:status result))
+                  (do
+                    (println "Tool selected:" (:tool-used result))
+                    (println)
+                    (print-separator)
+                    (println (:result result))
+                    (print-separator))
+                  (do
+                    (println "❌ Error:" (:message result)))))
+              
+              (println)
+              (recur))))))))
+
 (defn handle-input
   "Handle user input and route to appropriate handler."
   [input schema-info]
@@ -239,6 +314,11 @@
       (= lower "help")
       (do
         (print-help)
+        :continue)
+      
+      (= lower "assistant")
+      (do
+        (assistant-mode)
         :continue)
       
       (= lower "schema")
