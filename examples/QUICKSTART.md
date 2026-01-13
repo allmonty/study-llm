@@ -32,14 +32,14 @@ This guide shows you how to create agents that can intelligently choose between 
       {:status :success
        :result (reduce * (:numbers context))})))
 
-;; Step 2: Create agent with keyword-based selection
+;; Step 2: Create agent with LLM-based selection
 (def smart-calc
   (agent/create-llm-agent
     "calculator"
     "Does math operations"
     {:add add-tool
      :multiply multiply-tool}
-    :config {:tool-selection-strategy :keyword
+    :config {:tool-selection-strategy :llm
              :primary-tool :add}))
 
 ;; Step 3: Use the agent - it picks the right tool!
@@ -48,30 +48,34 @@ This guide shows you how to create agents that can intelligently choose between 
 
 (agent/execute smart-calc "multiply 4 times 7" {:numbers [4 7]})
 ;; => {:status :success, :result 28, :tool-used :multiply}
+
+(agent/execute smart-calc "what is 10 plus 20?" {:numbers [10 20]})
+;; => {:status :success, :result 30, :tool-used :add}
 ```
 
 ## How It Works
 
-The agent looks at your input ("add 5 and 3") and:
-1. Converts it to lowercase
-2. Checks each tool's name and description
-3. Finds "add" matches the :add tool
-4. Uses that tool
+The agent uses the LLM to understand your input and select the right tool:
+1. Sends input and available tools to the LLM
+2. LLM analyzes the intent (e.g., "add", "multiply")
+3. LLM selects the most appropriate tool
+4. Agent executes that tool
 
 ## Three Selection Strategies
 
-### 1. Keyword Matching (Recommended for most cases)
+### 1. LLM-Based Selection (Recommended for natural language)
 
-Best for: Natural language inputs where users mention what they want to do
+Best for: Natural language inputs where users describe what they want to do
 
 ```clojure
-:config {:tool-selection-strategy :keyword
-         :primary-tool :add}  ; fallback if no match
+:config {:tool-selection-strategy :llm
+         :primary-tool :add}  ; fallback if LLM fails
 ```
 
-The agent matches words in the input against:
-- Tool names (the keyword like `:add`)
-- Tool descriptions (like "add sum plus")
+The agent uses the LLM to:
+- Understand the user's intent from natural language
+- Analyze available tool descriptions
+- Select the most appropriate tool
 
 ### 2. Custom Function (For complex logic)
 
@@ -101,13 +105,19 @@ Just uses the specified tool every time.
 
 ## Tips for Good Tool Descriptions
 
-Make your tool descriptions contain keywords users might say:
+Make your tool descriptions clear and descriptive for the LLM:
 
 ```clojure
-;; ✅ Good - contains synonyms
+;; ✅ Good - clear and descriptive
 (agent/create-tool
   :add
-  "add sum plus addition combine total"
+  "Adds numbers together to get their sum"
+  ...)
+
+;; ✅ Also good - includes synonyms
+(agent/create-tool
+  :multiply
+  "Multiplies numbers to get their product"
   ...)
 
 ;; ❌ Bad - too short
@@ -122,45 +132,45 @@ Make your tool descriptions contain keywords users might say:
 ### 1. Natural Language Database Agent
 ```clojure
 Tools:
-- :select - "select find get retrieve query show"
-- :count - "count how many number of total"
-- :summarize - "summarize summary aggregate stats"
+- :select - "Retrieves and displays data from the database"
+- :count - "Counts the number of records matching criteria"
+- :summarize - "Provides aggregate statistics and summaries"
 
-Input: "show me all customers" -> Uses :select
-Input: "how many orders?" -> Uses :count
-Input: "summarize sales data" -> Uses :summarize
+Input: "show me all customers" -> LLM selects :select
+Input: "how many orders?" -> LLM selects :count
+Input: "summarize sales data" -> LLM selects :summarize
 ```
 
 ### 2. File Processing Agent
 ```clojure
 Tools:
-- :read - "read open view show display"
-- :write - "write save create update"
-- :delete - "delete remove erase"
+- :read - "Reads and displays file contents"
+- :write - "Writes or updates file contents"
+- :delete - "Deletes or removes files"
 
-Input: "read file.txt" -> Uses :read
-Input: "save to output.txt" -> Uses :write
+Input: "read file.txt" -> LLM selects :read
+Input: "save to output.txt" -> LLM selects :write
 ```
 
 ### 3. API Client Agent
 ```clojure
 Tools:
-- :get - "get fetch retrieve read"
-- :post - "post create send submit"
-- :put - "put update modify change"
-- :delete - "delete remove"
+- :get - "Retrieves data via GET request"
+- :post - "Creates new resources via POST request"
+- :put - "Updates existing resources via PUT request"
+- :delete - "Deletes resources via DELETE request"
 
-Input: "get user info" -> Uses :get
-Input: "create new user" -> Uses :post
+Input: "get user info" -> LLM selects :get
+Input: "create new user" -> LLM selects :post
 ```
 
 ## Common Patterns
 
-### Pattern 1: Verb-based Selection
+### Pattern 1: Natural Language Understanding
 ```clojure
-Tools named after actions: :add, :multiply, :divide
-Descriptions with synonyms: "add sum plus", "multiply times product"
-Works with: "add X and Y", "multiply A by B"
+Tools with clear descriptions
+LLM understands user intent
+Works with varied phrasings
 ```
 
 ### Pattern 2: Context-based Selection

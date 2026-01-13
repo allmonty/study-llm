@@ -2,7 +2,7 @@
   "Example demonstrating an agent with multiple tools and intelligent tool selection.
   
   This example shows how an agent can decide between multiple tools based on:
-  1. Keyword matching in the input
+  1. LLM-based intelligent selection
   2. Custom selection functions
   3. Configured primary tool
   
@@ -76,14 +76,15 @@
   "Create a math agent with multiple tools that can be selected based on input.
   
   This agent demonstrates intelligent tool selection:
-  - Uses keyword matching to find the right operation
-  - Defaults to addition if no match is found
+  - Uses LLM to analyze the input and select the right operation
+  - The LLM understands natural language and chooses appropriately
+  - Defaults to addition if LLM fails
   
   Example inputs:
-  - 'add 5 and 3' -> uses add tool
-  - 'multiply 4 by 7' -> uses multiply tool
-  - 'divide 10 by 2' -> uses divide tool
-  - 'raise 2 to the power of 8' -> uses power tool"
+  - 'add 5 and 3' -> LLM selects add tool
+  - 'multiply 4 by 7' -> LLM selects multiply tool
+  - 'divide 10 by 2' -> LLM selects divide tool
+  - 'raise 2 to the power of 8' -> LLM selects power tool"
   []
   (agent/create-llm-agent
     "math-agent"
@@ -92,7 +93,7 @@
      :multiply (create-multiply-tool)
      :divide (create-divide-tool)
      :power (create-power-tool)}
-    :config {:tool-selection-strategy :keyword
+    :config {:tool-selection-strategy :llm
              :primary-tool :add}))
 
 ;; ============================================================================
@@ -226,7 +227,7 @@
   (println "========================================\n")
   
   (let [agent (create-math-agent)]
-    ;; Example 1: Addition (keyword matching "add")
+    ;; Example 1: Addition (LLM understands "add")
     (println "Example 1: 'add 10 and 20'")
     (let [result (agent/execute agent "add 10 and 20" {:numbers [10 20]})]
       (println "  Tool used:" (:tool-used result))
@@ -234,7 +235,7 @@
       (println "  Explanation:" (:explanation result))
       (println))
     
-    ;; Example 2: Multiplication (keyword matching "multiply")
+    ;; Example 2: Multiplication (LLM understands "multiply")
     (println "Example 2: 'multiply 5 by 6'")
     (let [result (agent/execute agent "multiply 5 by 6" {:numbers [5 6]})]
       (println "  Tool used:" (:tool-used result))
@@ -242,7 +243,7 @@
       (println "  Explanation:" (:explanation result))
       (println))
     
-    ;; Example 3: Division (keyword matching "divide")
+    ;; Example 3: Division (LLM understands "divide")
     (println "Example 3: 'divide 100 by 4'")
     (let [result (agent/execute agent "divide 100 by 4" {:numbers [100 4]})]
       (println "  Tool used:" (:tool-used result))
@@ -250,7 +251,7 @@
       (println "  Explanation:" (:explanation result))
       (println))
     
-    ;; Example 4: Power (keyword matching "power" or "raise")
+    ;; Example 4: Power (LLM understands "power" or "raise")
     (println "Example 4: 'raise 2 to the power of 8'")
     (let [result (agent/execute agent "raise 2 to the power of 8" {:numbers [2 8]})]
       (println "  Tool used:" (:tool-used result))
@@ -258,9 +259,9 @@
       (println "  Explanation:" (:explanation result))
       (println))
     
-    ;; Example 5: No keyword match - uses default (add)
-    (println "Example 5: 'calculate 3 and 7' (no specific keyword)")
-    (let [result (agent/execute agent "calculate 3 and 7" {:numbers [3 7]})]
+    ;; Example 5: Natural language - LLM understands intent
+    (println "Example 5: 'what is 3 plus 7?' (natural language)")
+    (let [result (agent/execute agent "what is 3 plus 7?" {:numbers [3 7]})]
       (println "  Tool used:" (:tool-used result))
       (println "  Result:" (:result result))
       (println "  Explanation:" (:explanation result))
@@ -348,11 +349,11 @@
   (println "========================================")
   (println "1. Agents can have multiple tools and select the right one")
   (println "2. Selection strategies:")
-  (println "   - :keyword - Match keywords in input to tool descriptions")
+  (println "   - :llm - Use LLM to intelligently choose based on input")
   (println "   - :function - Use custom logic to select tools")
   (println "   - :primary - Always use a specific tool (default)")
   (println "3. The agent has 'intelligence' through:")
-  (println "   - Keyword matching in user input")
+  (println "   - LLM understanding of natural language")
   (println "   - Context analysis")
   (println "   - Custom selection functions")
   (println "4. This makes agents more versatile and autonomous")

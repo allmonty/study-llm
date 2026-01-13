@@ -910,7 +910,7 @@ This is a learning project. Feel free to:
 **Can agents decide between multiple tools?** Yes! Agents can now intelligently select the right tool based on input and context.
 
 See the **[examples/](examples/)** directory for demonstrations of:
-- **Keyword-based selection**: Agent matches keywords in input to tool descriptions
+- **LLM-based selection**: Agent uses LLM to understand intent and choose tools
 - **Custom function selection**: Agent uses custom logic to choose tools
 - **Context-aware selection**: Agent examines context to make decisions
 
@@ -919,15 +919,15 @@ Example:
 ;; Create an agent with multiple tools
 (def math-agent (create-math-agent))
 
-;; The agent automatically selects the right tool:
-(execute math-agent "add 5 and 3" {...})      ; Uses :add tool
-(execute math-agent "multiply 4 by 7" {...})  ; Uses :multiply tool
-(execute math-agent "divide 100 by 5" {...})  ; Uses :divide tool
+;; The agent automatically selects the right tool using LLM:
+(execute math-agent "add 5 and 3" {...})      ; LLM selects :add tool
+(execute math-agent "multiply 4 by 7" {...})  ; LLM selects :multiply tool
+(execute math-agent "what is 100 divided by 5?" {...})  ; LLM selects :divide tool
 ```
 
 **Where does the "intelligence" come from?**
-- The agent's tool selection mechanism, not just the tools themselves
-- Available strategies: `:keyword`, `:function`, `:primary` (default)
+- The agent's tool selection mechanism, powered by LLM or custom logic
+- Available strategies: `:llm`, `:function`, `:primary` (default)
 
 Run the example:
 ```bash
