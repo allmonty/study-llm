@@ -7,7 +7,8 @@
   3. Configured primary tool
   
   The agent has 'intelligence' in choosing the right tool for the task."
-  (:require [study-llm.agent :as agent]))
+  (:require [study-llm.agent :as agent]
+            [clojure.string :as str]))
 
 ;; ============================================================================
 ;; Example: Math Operations Agent
@@ -26,7 +27,7 @@
             result (reduce + numbers)]
         {:status :success
          :result result
-         :explanation (str "Added " (clojure.string/join " + " numbers) " = " result)}))))
+         :explanation (str "Added " (str/join " + " numbers) " = " result)}))))
 
 (defn create-multiply-tool
   "Tool for multiplying two numbers."
@@ -39,7 +40,7 @@
             result (reduce * numbers)]
         {:status :success
          :result result
-         :explanation (str "Multiplied " (clojure.string/join " × " numbers) " = " result)}))))
+         :explanation (str "Multiplied " (str/join " × " numbers) " = " result)}))))
 
 (defn create-divide-tool
   "Tool for dividing two numbers."
@@ -182,7 +183,7 @@
     
     ;; Default: use keyword matching
     :else
-    (let [input-lower (clojure.string/lower-case (str input))]
+    (let [input-lower (str/lower-case (str input))]
       (cond
         (re-find #"filter|where|select" input-lower) (:filter tools)
         (re-find #"map|transform|convert" input-lower) (:map tools)

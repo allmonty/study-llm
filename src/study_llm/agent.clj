@@ -101,8 +101,9 @@
   Selection strategies:
   - :primary - Use the configured primary tool (default)
   - :keyword - Match keywords in input to tool names/descriptions
-  - :llm - Use LLM to decide which tool to use (future enhancement)
-  - :function - Use a custom function to select the tool"
+  - :function - Use a custom function to select the tool
+  
+  Future enhancement: :llm strategy to use LLM for tool selection"
   [tools input context config]
   (let [strategy (or (:tool-selection-strategy config) :primary)]
     (case strategy
