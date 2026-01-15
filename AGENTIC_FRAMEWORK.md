@@ -110,6 +110,23 @@ All agents implement this protocol, ensuring consistent interface.
 
 Tools are named functions with metadata. Agents use tools to accomplish tasks.
 
+#### Multi-Tool Selection (NEW! ✨)
+```clojure
+(defn select-tool [tools input context config])
+```
+
+Agents can intelligently select between multiple tools using different strategies:
+
+- **`:primary`** - Use the configured primary tool (default behavior)
+- **`:llm`** - Use LLM to understand intent and select the appropriate tool
+- **`:function`** - Use a custom function to select the appropriate tool
+
+This gives agents "intelligence" in choosing the right tool for each task.
+
+**Example**: A math agent with multiple tools (add, multiply, divide, power) can automatically select the right operation. The LLM-based strategy understands natural language like "what is 5 times 7?" or "add 10 and 20" and selects the appropriate tool.
+
+See [examples/multi_tool_agent.clj](../examples/multi_tool_agent.clj) for comprehensive demonstrations.
+
 #### Memory Management
 ```clojure
 (defn create-memory [type])
