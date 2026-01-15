@@ -24,11 +24,11 @@ This directory contains examples demonstrating various capabilities of the agent
 **Run the Example**:
 ```bash
 # From the project root
-clj -M -m examples.multi_tool_agent
+clj -M -m multi-tool-agent
 
 # Or in REPL
 clj
-(require '[examples.multi_tool_agent :as demo])
+(require '[multi-tool-agent :as demo])
 (demo/-main)
 ```
 
