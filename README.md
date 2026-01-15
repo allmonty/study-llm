@@ -931,7 +931,7 @@ Example:
 
 Run the example:
 ```bash
-clj -M -m examples.multi-tool-agent
+clj -M -m examples.multi_tool_agent
 ```
 
 For more details, see [examples/README.md](examples/README.md).

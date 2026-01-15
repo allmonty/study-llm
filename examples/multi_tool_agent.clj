@@ -1,4 +1,4 @@
-(ns examples.multi-tool-agent
+(ns examples.multi_tool_agent
   "Example demonstrating an agent with multiple tools and intelligent tool selection.
   
   This example shows how an agent can decide between multiple tools based on:
