@@ -1,88 +1,131 @@
-# Why LLM Calls Are Made from Tools Instead of Agents
+# Agent and Tool Architecture: Corrected Understanding
 
 ## Executive Summary
 
-In this agentic framework, **LLM calls are made from within tools, not directly from agents**. This is an intentional architectural decision that follows the **Tool Pattern** used by modern agentic frameworks like Microsoft Semantic Kernel, LangChain, and LangGraph.
+This document clarifies the **correct** architectural pattern for agents and tools in agentic frameworks:
 
-## The Architecture Pattern
+**The Controller**: The **Agent** (via the LLM) is the only entity that reasons and issues tool calls.
 
-### Current Implementation
+**The Executor**: **Tools** are passive execution units. They do not contain their own LLM calls unless that tool is explicitly acting as a wrapper for a **Sub-Agent**.
+
+This correction addresses a previous misunderstanding about how other frameworks (like Microsoft Semantic Kernel, LangChain, and LangGraph) structure their architectures.
+
+## The Corrected Architecture Pattern
+
+### Standard Agentic Pattern
 
 ```
-Agent (LLMAgent)
-  └─> Tool (generate-sql-tool)
-       └─> LLM Call (llm/generate-completion)
+Agent (Controller)
+  ├─> Reasoning via LLM
+  └─> Issues Tool Calls
+       └─> Tool (Executor) - Passive execution
 ```
 
-### Where LLM Calls Happen
+### Exception: Tools Wrapping Sub-Agents
 
-In our codebase, LLM calls are located as follows:
+```
+Agent (Controller)
+  └─> Issues Tool Call
+       └─> Tool
+            └─> Sub-Agent (Controller)
+                 ├─> Reasoning via LLM
+                 └─> Issues Tool Calls
+                      └─> Tool (Executor)
+```
 
-1. **SQL Generator Agent** (`src/study_llm/agents/sql_generator.clj`)
-   - Agent: `LLMAgent`
-   - Tool: `generate-sql-tool` 
-   - **LLM call location**: Inside the tool function at line 53
-   ```clojure
-   result (llm/generate-completion prompt :temperature 0.1)
-   ```
+### Agent Execution Modes
 
-2. **Result Analyzer Agent** (`src/study_llm/agents/result_analyzer.clj`)
-   - Agent: `LLMAgent`
-   - Tool: `analyze-results-tool`
-   - **LLM call location**: Inside the tool function at line 31
-   ```clojure
-   result (llm/generate-completion prompt :temperature 0.3)
-   ```
+Our framework supports two agent execution modes:
 
-3. **Agent Framework** (`src/study_llm/agent.clj`)
-   - Tool selection: `select-tool-with-llm`
-   - **LLM call location**: Inside the tool selection function at line 131
-   ```clojure
-   llm-result (llm/generate-completion prompt :temperature 0.1)
-   ```
+1. **Autonomous Mode**: Agent uses LLM to reason about which tool to call based on context
+   - Agent makes intelligent decisions
+   - LLM-based tool selection (`:tool-selection-strategy :llm`)
+   
+2. **Sequential Mode**: Agent follows predefined tool invocation sequence
+   - Deterministic, hard-coded tool selection
+   - Direct tool invocation (`:tool-selection-strategy :primary`)
 
-## Why This Design?
+### Current Implementation Note
 
-### 1. **Separation of Concerns**
+Our current implementation has a **transitional architecture** where some domain-specific LLM calls exist within tools (e.g., text-to-SQL generation, result analysis). This is a **pragmatic pattern** for domain-specific transformations but differs from the standard agentic pattern where:
+- The agent's LLM handles reasoning and tool selection
+- Tools are passive executors
+- Domain-specific LLM calls should ideally be wrapped as Sub-Agents
+
+## Why This Corrected Understanding Matters
+
+### 1. **Clear Separation of Concerns**
 
 **Agents** are responsible for:
-- Orchestration logic
-- Tool selection
-- Memory management
-- Context passing
-- Error handling
+- **Reasoning** via LLM
+- **Decision-making** about which tools to invoke
+- **Context management** across tool calls
+- **Orchestration** of multi-step workflows
+- Error handling and recovery
 
 **Tools** are responsible for:
-- Actual task execution
-- LLM interaction
+- **Passive execution** of specific tasks
 - Database queries
-- External API calls
-- Business logic
+- File operations
+- API calls
+- Data transformations
+- OR wrapping a Sub-Agent (hierarchical composition)
 
-This separation makes the code modular and maintainable.
+This separation creates a clear architectural boundary.
 
-### 2. **Reusability**
+### 2. **Hierarchical Agent Composition**
 
-Tools can be:
-- Used by different agents
-- Combined in different ways
-- Tested independently
-- Shared across workflows
+Agents can be composed hierarchically:
 
-Example: The same SQL generation tool could be used by:
-- An interactive query agent
-- A batch reporting agent
-- A data export agent
+```clojure
+;; Parent Agent
+(def parent-agent 
+  (create-agent 
+    :tools {:sub-task (create-sub-agent-tool child-agent)}))
 
-### 3. **Flexibility in Agent Implementation**
+;; Child Agent wrapped in a tool
+(defn create-sub-agent-tool [sub-agent]
+  (create-tool 
+    :sub-agent-wrapper
+    "Delegates to a specialized sub-agent"
+    (fn [input context]
+      ;; Tool invokes another agent
+      (execute sub-agent input context))))
+```
 
-Agents can choose between different tools based on:
-- Input type
-- Context
-- Configuration
-- Custom selection logic
+This enables:
+- Building complex agent hierarchies
+- Delegating specialized tasks to sub-agents
+- Composable agent architectures
+- Separation of concerns at multiple levels
 
-The agent doesn't need to know *how* a tool works, only *what* it does.
+### 3. **Agent Execution Modes**
+
+Agents can operate in different modes:
+
+**Autonomous Mode** (LLM-driven):
+```clojure
+(create-llm-agent 
+  "intelligent-agent"
+  "Makes decisions about tool usage"
+  tools
+  :config {:tool-selection-strategy :llm})
+```
+
+**Sequential Mode** (Hard-coded):
+```clojure
+(create-llm-agent 
+  "deterministic-agent"
+  "Follows predefined tool sequence"
+  tools
+  :config {:tool-selection-strategy :primary
+           :primary-tool :specific-tool})
+```
+
+This flexibility allows:
+- Testing with deterministic tool selection
+- Production use with intelligent tool selection
+- Hybrid approaches for different use cases
 
 ### 4. **Testability**
 
@@ -100,427 +143,396 @@ The agent doesn't need to know *how* a tool works, only *what* it does.
     ...))
 ```
 
-### 5. **Alignment with Industry Standards**
+### 4. **Corrected Framework Understanding**
 
-This pattern is used by all major agentic frameworks:
+#### Microsoft Semantic Kernel - Corrected Understanding
+In Semantic Kernel:
+- **Plugins** (tools) are passive functions
+- The **Kernel/Planner** (agent) uses LLM to reason and select plugins
+- Plugins do NOT contain LLM calls (unless wrapping a sub-agent)
 
-#### Microsoft Semantic Kernel
 ```csharp
-// Agent has plugins (tools)
-var agent = new Agent();
-agent.Plugins.Add(sqlPlugin);  // Plugin calls LLM
-await agent.RunAsync(input);
+// Agent reasons and selects plugin
+var planner = new SequentialPlanner(kernel);
+var plan = await planner.CreatePlanAsync(goal); // LLM reasoning here
+await plan.InvokeAsync(); // Plugins execute passively
 ```
 
-#### LangChain
-```python
-# Agent has tools
-from langchain.agents import Tool
+#### LangChain - Corrected Understanding
+In LangChain:
+- **Tools** are passive functions
+- The **Agent** uses LLM to reason and select tools
+- Tools do NOT contain LLM calls (unless they are chains/sub-agents)
 
-sql_tool = Tool(
-    name="SQL Generator",
-    func=generate_sql,  # This function calls LLM
-    description="Converts text to SQL"
+```python
+# Agent with LLM reasoning
+agent = initialize_agent(
+    tools=[calculator_tool],  # Passive tools
+    llm=llm,  # Agent's LLM for reasoning
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION
 )
-
-agent = initialize_agent(tools=[sql_tool])
+agent.run("What is 25 * 4?")  # Agent reasons, selects tools
 ```
 
-#### LangGraph
+#### LangGraph - Corrected Understanding
+In LangGraph:
+- **Nodes** can be passive functions OR agents
+- The **Graph** defines workflow, not necessarily LLM reasoning at each node
+- Conditional edges use LLM to route between nodes
+
 ```python
-# Nodes in graph contain the logic
-def sql_node(state):
-    # This node calls LLM
-    return {"sql": call_llm(state["query"])}
+# Node is typically passive
+def calculator_node(state):
+    return {"result": state["x"] + state["y"]}
 
-graph = StateGraph()
-graph.add_node("sql_generator", sql_node)
+# Agent/LLM reasoning happens in routing
+graph.add_conditional_edges(
+    "agent",
+    lambda x: llm.predict(x)  # LLM reasoning for routing
+)
 ```
 
-### 6. **Tool Composition**
+## Recommended Patterns for This Framework
 
-Tools can be composed or chained:
-
-```clojure
-;; Simple tool
-(defn basic-tool []
-  (create-tool :basic "Basic" 
-    (fn [input _] 
-      (llm/generate-completion input))))
-
-;; Composite tool
-(defn enhanced-tool []
-  (create-tool :enhanced "Enhanced"
-    (fn [input context]
-      (let [preprocessed (preprocess input)
-            result1 (llm/generate-completion preprocessed)
-            result2 (llm/generate-completion (refine result1))]
-        (merge result1 result2)))))
-```
-
-### 7. **Configuration Flexibility**
-
-Each tool can have its own LLM configuration:
+### ✅ Pattern 1: Agent Reasons, Tools Execute (Standard)
 
 ```clojure
-;; SQL Generator: Low temperature for precision
-(defn generate-sql-tool []
-  (create-tool :generate-sql "Generate SQL"
-    (fn [question context]
-      (llm/generate-completion prompt :temperature 0.1))))
+;; GOOD: Agent uses LLM for reasoning and tool selection
+(defn create-intelligent-agent []
+  (create-llm-agent
+    "reasoning-agent"
+    "Uses LLM to reason and select appropriate tools"
+    {:database (create-db-tool)
+     :calculator (create-calc-tool)
+     :search (create-search-tool)}
+    :config {:tool-selection-strategy :llm}))
 
-;; Analyzer: Higher temperature for creativity  
-(defn analyze-results-tool []
-  (create-tool :analyze "Analyze results"
-    (fn [question context]
-      (llm/generate-completion prompt :temperature 0.3))))
-```
-
-## Alternative Approaches and Why They're Problematic
-
-### ❌ Approach 1: LLM Calls Directly in Agent
-
-```clojure
-;; BAD: Agent calls LLM directly
-(defrecord LLMAgent [name]
-  Agent
-  (execute [this input context]
-    (let [prompt (create-prompt input context)
-          result (llm/generate-completion prompt)]  ; ❌ Agent knows about LLM
-      result)))
-```
-
-**Problems**:
-- Agent is tightly coupled to LLM implementation
-- Can't reuse tools across agents
-- Hard to test (must mock LLM for every agent test)
-- Agent has too many responsibilities
-- Can't swap LLM providers easily
-
-### ❌ Approach 2: Tools Return Prompts, Agent Calls LLM
-
-```clojure
-;; BAD: Tools return prompts, agent calls LLM
-(defn generate-sql-tool []
-  (create-tool :generate-sql "Generate SQL"
-    (fn [question context]
-      {:prompt (create-sql-prompt question context)})))  ; ❌ Returns prompt, not result
-
-(defrecord LLMAgent [name]
-  Agent
-  (execute [this input context]
-    (let [tool-result (invoke-tool tool input context)
-          prompt (:prompt tool-result)
-          llm-result (llm/generate-completion prompt)]  ; ❌ Agent calls LLM
-      llm-result)))
-```
-
-**Problems**:
-- Split responsibility makes code harder to follow
-- Agent needs to know about prompts
-- Tools can't encapsulate their complete behavior
-- More complex error handling
-- Harder to compose tools
-
-## The Right Pattern: Tools Encapsulate Complete Behavior
-
-```clojure
-;; ✅ GOOD: Tool handles everything
-(defn generate-sql-tool []
-  (create-tool :generate-sql "Generate SQL"
-    (fn [question context]
-      ;; Tool owns the complete workflow:
-      ;; 1. Create prompt
-      (let [prompt (create-sql-prompt question context)
-            ;; 2. Call LLM
-            result (llm/generate-completion prompt :temperature 0.1)]
-        ;; 3. Process result
-        (if (= :success (:status result))
-          {:status :success
-           :result (str/trim (:response result))}
-          result)))))
-
-;; Agent just orchestrates
-(defrecord LLMAgent [name tools]
-  Agent
-  (execute [this input context]
-    (let [tool (select-tool tools input context)]
-      (invoke-tool tool input context))))  ; ✅ Simple delegation
+;; Tools are passive executors
+(defn create-db-tool []
+  (create-tool :database "Execute database query"
+    (fn [query context]
+      {:status :success
+       :result (execute-db-query query)})))
 ```
 
 **Benefits**:
-- Clear separation of concerns
-- Tool is self-contained and testable
-- Agent is simple and reusable
-- Easy to understand and maintain
+- Clear separation: Agent reasons, Tools execute
+- Agent's LLM handles intelligence
+- Tools are simple, testable, passive functions
 
-## Real-World Example from the Codebase
-
-### SQL Generator Agent
-
-**File**: `src/study_llm/agents/sql_generator.clj`
+### ✅ Pattern 2: Hierarchical Agents (Sub-Agent in Tool)
 
 ```clojure
-;; The TOOL contains the LLM call
-(defn generate-sql-tool []
-  (agent/create-tool
-    :generate-sql
-    "Converts natural language questions to SQL queries using LLM"
+;; GOOD: Tool wraps a sub-agent for specialized reasoning
+(defn create-sql-expert-tool [sql-expert-agent]
+  (create-tool :sql-expert "Specialized SQL generation"
     (fn [question context]
-      (let [schema-info (:schema context)
-            prompt (create-sql-prompt question schema-info)
-            ;; LLM CALL HAPPENS HERE IN THE TOOL
-            result (llm/generate-completion prompt :temperature 0.1)]
-        (if (= :success (:status result))
-          (let [sql (-> (:response result)
-                       (str/replace #"```sql" "")
-                       (str/replace #"```" "")
-                       str/trim)]
-            {:status :success
-             :result sql
-             :updated-context {:generated-sql sql}})
-          result)))))
+      ;; Delegate to sub-agent which has its own LLM reasoning
+      (execute sql-expert-agent question context))))
 
-;; The AGENT just orchestrates the tool
-(defn create-sql-generator-agent []
-  (let [tools {:generate (generate-sql-tool)}
-        memory (agent/create-memory :conversation)]
-    (agent/create-llm-agent
-      "sql-generator"
-      "Converts natural language questions to SQL queries"
-      tools
-      :memory memory
-      :config {:temperature 0.1 :model "llama2"})))
-```
-
-### What the Agent Does
-
-From `src/study_llm/agent.clj`:
-
-```clojure
-(defrecord LLMAgent [name description tools memory config]
-  Agent
-  (execute [this input context]
-    (log/info "LLMAgent executing:" name)
-    ;; 1. Select appropriate tool
-    (let [tool-fn (select-tool tools input context config)
-          ;; 2. Invoke the tool (tool makes LLM call)
-          result (if tool-fn
-                   (let [tool-result (invoke-tool tool-fn input context)]
-                     (assoc tool-result :tool-used (:name tool-fn)))
-                   {:status :error
-                    :message (str "No tool found for agent " name)})]
-      ;; 3. Store in memory
-      (when memory
-        (add-to-memory memory {:input input
-                              :result result
-                              :timestamp (java.time.Instant/now)
-                              :agent name}))
-      result)))
-```
-
-**Agent's responsibilities**:
-1. Select the right tool
-2. Invoke the tool
-3. Store interaction in memory
-4. Return result
-
-**Tool's responsibilities**:
-1. Create appropriate prompt
-2. Call LLM with correct parameters
-3. Process LLM response
-4. Update context
-5. Handle errors
-
-## Benefits Demonstrated in This Codebase
-
-### 1. **Framework Support for Multiple Tools per Agent**
-
-The framework is designed to support multiple tools per agent. While the current SQL Generator and Result Analyzer agents use one primary tool each, the architecture supports multiple tools as demonstrated in the `examples/multi_tool_agent.clj` file:
-
-```clojure
-;; Example from examples/multi_tool_agent.clj
-;; Agent with multiple tools (add, subtract, multiply, divide)
-(defn create-math-agent []
-  (let [tools {:add (create-add-tool)
-               :subtract (create-subtract-tool)
-               :multiply (create-multiply-tool)
-               :divide (create-divide-tool)}]
-    (agent/create-llm-agent
-      "math-agent"
-      "Performs mathematical operations"
-      tools
+(defn create-parent-agent []
+  (let [sql-expert (create-sql-expert-agent)  ; Sub-agent
+        tools {:sql-expert (create-sql-expert-tool sql-expert)
+               :database (create-db-tool)}]
+    (create-llm-agent "parent" "Coordinates sub-agents" tools
       :config {:tool-selection-strategy :llm})))
 ```
 
-The agent can even use the LLM to intelligently select which tool to use based on the input! For example, if the user says "add 5 and 3", the agent uses the LLM to select the `:add` tool.
+**Benefits**:
+- Hierarchical composition of agents
+- Specialized sub-agents for complex tasks
+- Clear responsibility boundaries
+- Scalable architecture
 
-### 2. **Tool Reusability** (Currently Demonstrated)
-
-The same tool could be used in different agents:
+### ✅ Pattern 3: Sequential Mode (Deterministic)
 
 ```clojure
-;; Reuse SQL tool in different agents
-(def sql-tool (generate-sql-tool))
-
-(def interactive-agent 
-  (create-llm-agent "interactive" "Interactive" {:sql sql-tool}))
-
-(def batch-agent
-  (create-llm-agent "batch" "Batch processing" {:sql sql-tool}))
+;; GOOD: Agent follows predefined sequence, no LLM for tool selection
+(defn create-sequential-agent []
+  (create-llm-agent
+    "sequential-agent"
+    "Follows deterministic tool sequence"
+    {:primary-tool (create-primary-tool)}
+    :config {:tool-selection-strategy :primary
+             :primary-tool :primary-tool}))
 ```
 
-### 3. **Easy Testing**
+**Benefits**:
+- Predictable, testable behavior
+- Lower latency (no LLM call for tool selection)
+- Suitable for well-defined workflows
+
+## Transitional Pattern in Current Implementation
+
+### ⚠️ Current Pragmatic Approach
+
+Our current implementation uses a **transitional pattern** where domain-specific LLM calls exist within tools:
 
 ```clojure
-;; Test tool independently
-(deftest test-sql-tool
-  (let [tool (generate-sql-tool)
-        context {:schema test-schema}]
-    (testing "generates valid SQL"
-      (let [result (invoke-tool tool "How many customers?" context)]
-        (is (= :success (:status result)))
-        (is (str/starts-with? (:result result) "SELECT"))))))
-
-;; Test agent with mock tool
-(deftest test-agent
-  (let [mock-tool (create-tool :mock "Mock" 
-                    (fn [_ _] {:status :success :result "mocked"}))
-        agent (create-llm-agent "test" "Test" {:mock mock-tool})]
-    (testing "agent orchestrates tool correctly"
-      (let [result (execute agent "input" {})]
-        (is (= :success (:status result)))))))
-```
-
-### 4. **Different LLM Configurations per Tool**
-
-Each tool can use different LLM settings:
-
-```clojure
-;; SQL generation: precise (low temperature)
+;; TRANSITIONAL: Domain-specific LLM in tool
 (defn generate-sql-tool []
-  (create-tool :sql "SQL"
-    (fn [q c] (llm/generate-completion prompt :temperature 0.1))))
-
-;; Creative analysis: more varied (higher temperature)
-(defn analyze-results-tool []
-  (create-tool :analyze "Analyze"
-    (fn [q c] (llm/generate-completion prompt :temperature 0.3))))
+  (create-tool :generate-sql "Generate SQL"
+    (fn [question context]
+      ;; Domain-specific LLM call for text-to-SQL
+      (llm/generate-completion prompt :temperature 0.1))))
 ```
 
-## Comparison with Other Patterns
+**Why this exists:**
+- Pragmatic solution for domain-specific transformations
+- Simpler than creating sub-agents for every LLM call
+- Works well for single-purpose transformations
 
-### Pattern Comparison Table
+**Better approach (recommended for evolution):**
+```clojure
+;; RECOMMENDED: Wrap as sub-agent
+(defn create-sql-generator-sub-agent []
+  (create-llm-agent "sql-generator-sub" "Generates SQL"
+    {:generate (create-prompt-tool)}
+    :config {:temperature 0.1}))
 
-| Aspect | LLM in Tools (✅ Current) | LLM in Agents (❌) | LLM as Separate Service (⚠️) |
-|--------|-------------------------|-------------------|----------------------------|
-| Separation of Concerns | ✅ Clear | ❌ Coupled | ✅ Clear |
-| Reusability | ✅ High | ❌ Low | ✅ High |
-| Testability | ✅ Easy | ⚠️ Moderate | ✅ Easy |
-| Flexibility | ✅ High | ❌ Low | ⚠️ Moderate |
-| Simplicity | ✅ Simple | ⚠️ Moderate | ❌ Complex |
-| Industry Standard | ✅ Yes | ❌ No | ⚠️ Sometimes |
+(defn create-sql-expert-tool [sql-agent]
+  (create-tool :sql-expert "SQL generation sub-agent"
+    (fn [question context]
+      (execute sql-agent question context))))
+```
 
-## Framework Comparison
+This refactoring provides:
+- Cleaner separation of concerns
+- Better testability
+- More consistent architecture
+- Easier to extend with multiple tools per sub-agent
 
-### How Other Frameworks Handle This
+## Architecture Summary
+
+### The Standard Pattern (Recommended)
+
+```
+┌─────────────────────────────────────────┐
+│           Agent (Controller)            │
+│  • LLM Reasoning                        │
+│  • Tool Selection via LLM               │
+│  • Context Management                   │
+└─────────────┬───────────────────────────┘
+              │
+              ▼
+    ┌─────────────────────┐
+    │   Tools (Executors) │
+    │   • Passive         │
+    │   • No LLM calls    │
+    └─────────────────────┘
+```
+
+### Hierarchical Pattern (For Complex Domains)
+
+```
+┌─────────────────────────────────────────┐
+│      Parent Agent (Controller)          │
+│  • LLM Reasoning                        │
+│  • Tool Selection via LLM               │
+└─────────────┬───────────────────────────┘
+              │
+              ▼
+    ┌─────────────────────┐
+    │   Tool (Wrapper)    │
+    │   • Wraps Sub-Agent │
+    └─────────┬───────────┘
+              │
+              ▼
+    ┌─────────────────────┐
+    │ Sub-Agent           │
+    │ • LLM Reasoning     │
+    │ • Tool Selection    │
+    └─────────┬───────────┘
+              │
+              ▼
+    ┌─────────────────────┐
+    │ Sub-Tools           │
+    │ • Passive Executors │
+    └─────────────────────┘
+```
+
+### Execution Mode Flexibility
+
+**Autonomous Mode:**
+- Agent uses LLM to reason about tool selection
+- Dynamic, intelligent decision-making
+- Best for complex, varied inputs
+
+**Sequential Mode:**
+- Agent follows predefined tool sequence
+- Deterministic, predictable
+- Best for well-defined workflows
+
+## Key Architectural Principles
+
+### 1. Agent as Controller
+- **Reasoning**: Agent uses LLM to understand input and context
+- **Decision-Making**: Agent selects which tool to invoke
+- **Orchestration**: Agent manages multi-step workflows
+- **Context Management**: Agent maintains state across operations
+
+### 2. Tools as Executors
+- **Passive Execution**: Tools perform specific tasks without reasoning
+- **No LLM Calls**: Tools should not make LLM calls (unless wrapping Sub-Agent)
+- **Single Responsibility**: Each tool does one thing well
+- **Stateless**: Tools don't maintain state
+
+### 3. Hierarchical Composition
+- **Sub-Agents in Tools**: Complex domains can wrap agents in tools
+- **Recursive Structure**: Sub-agents follow same pattern
+- **Clear Boundaries**: Each level has well-defined responsibilities
+- **Scalability**: Easy to add new levels of abstraction
+
+### 4. Execution Mode Flexibility
+- **Autonomous**: LLM-driven tool selection for intelligence
+- **Sequential**: Hard-coded tool selection for determinism
+- **Hybrid**: Mix both approaches based on use case
+
+## Framework Comparisons - Corrected
+
+### How Other Frameworks Actually Work
 
 #### Microsoft Semantic Kernel
-**Pattern**: Functions/Plugins contain LLM calls
+**Corrected Pattern**: Agent/Planner uses LLM for reasoning, Plugins are passive
+
 ```csharp
-// Plugin (tool) makes LLM call
-[SKFunction("Convert text to SQL")]
-public async Task<string> GenerateSQL(string question)
+// The Planner (Agent) uses LLM to reason
+var planner = new SequentialPlanner(kernel);
+var plan = await planner.CreatePlanAsync("Send an email");
+
+// Plugins (Tools) are passive - no LLM calls
+public class EmailPlugin
 {
-    var prompt = CreatePrompt(question);
-    return await kernel.InvokeAsync(prompt);  // LLM call in plugin
+    [SKFunction("Send an email")]
+    public async Task<string> SendEmail(string recipient, string message)
+    {
+        // Passive execution - no LLM call
+        return await emailService.Send(recipient, message);
+    }
 }
 ```
 
 #### LangChain
-**Pattern**: Tools contain the logic
+**Corrected Pattern**: Agent uses LLM for reasoning and tool selection
+
 ```python
-from langchain.tools import Tool
+from langchain.agents import initialize_agent, Tool
+from langchain.llms import OpenAI
 
-def generate_sql(question: str) -> str:
-    prompt = create_prompt(question)
-    return llm.invoke(prompt)  # LLM call in tool
+# Tools are passive functions
+def calculator(query: str) -> str:
+    # No LLM call - just execute
+    return str(eval(query))
 
-sql_tool = Tool(
-    name="SQL Generator",
-    func=generate_sql,  # Tool function contains LLM call
-    description="Converts questions to SQL"
+calculator_tool = Tool(
+    name="Calculator",
+    func=calculator,  # Passive function
+    description="Useful for math calculations"
 )
+
+# Agent uses LLM for reasoning
+llm = OpenAI()
+agent = initialize_agent(
+    tools=[calculator_tool],
+    llm=llm,  # Agent's LLM
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION
+)
+
+# Agent reasons, selects tools, executes them
+result = agent.run("What is 25 * 4 + 10?")
 ```
 
-#### LangGraph  
-**Pattern**: Nodes contain the logic
+#### LangGraph
+**Corrected Pattern**: Nodes can be passive OR agents, edges use LLM for routing
+
 ```python
-def sql_node(state):
-    prompt = create_prompt(state["question"])
-    sql = llm.invoke(prompt)  # LLM call in node
-    return {"sql": sql}
+from langgraph.graph import StateGraph
 
-# Node is like a tool
-graph.add_node("generate_sql", sql_node)
-```
+# Passive node - no LLM
+def tool_node(state):
+    return {"result": perform_calculation(state["input"])}
 
-#### AutoGen
-**Pattern**: Agents contain the logic but delegate to functions
-```python
-class SQLAgent(ConversableAgent):
-    @register_function
-    def generate_sql(self, question):
-        """Function callable by the agent or other agents."""
-        prompt = self.create_prompt(question)
-        return self.llm.generate(prompt)  # Function contains LLM call
-```
+# Agent node - has LLM
+def agent_node(state):
+    # Agent uses LLM to reason
+    action = llm.predict(state["input"])
+    return {"action": action}
 
-**Note**: AutoGen uses a hybrid approach where agents can call LLM directly OR use registered functions. Our framework follows the pure tool/function pattern similar to Semantic Kernel and LangChain.
-
-### Our Implementation Aligns with Semantic Kernel and LangChain
-
-```clojure
-;; Semantic Kernel style: Tool (plugin) contains LLM call
-(defn generate-sql-tool []
-  (create-tool :generate-sql "Generate SQL"
-    (fn [question context]
-      (let [prompt (create-sql-prompt question context)]
-        (llm/generate-completion prompt :temperature 0.1)))))
-
-;; Agent orchestrates tools
-(defn create-sql-generator-agent []
-  (create-llm-agent "sql-generator" "SQL Generator" 
-    {:generate (generate-sql-tool)}))
+# Graph with conditional routing via LLM
+graph = StateGraph()
+graph.add_node("agent", agent_node)
+graph.add_node("tool", tool_node)
+graph.add_conditional_edges(
+    "agent",
+    lambda x: llm.route(x)  # LLM decides routing
+)
 ```
 
 ## Conclusion
 
-The decision to call LLMs from tools rather than agents is:
+The corrected architectural understanding is:
 
-1. **Intentional** - Following industry best practices
-2. **Standard** - Used by Semantic Kernel, LangChain, LangGraph
-3. **Beneficial** - Provides modularity, reusability, testability
-4. **Flexible** - Allows multiple tools, configurations, and compositions
-5. **Maintainable** - Clear separation of concerns
+1. **Agent as Controller** - Agent uses LLM to reason and make decisions
+2. **Tools as Executors** - Tools are passive, executing specific tasks
+3. **Exception for Sub-Agents** - Tools CAN wrap sub-agents for hierarchical composition
+4. **Execution Mode Flexibility** - Agents can be Autonomous (LLM-driven) or Sequential (deterministic)
 
-### The Key Principle
+### The Corrected Key Principle
 
-> **Agents orchestrate, Tools execute.**
+> **Agents reason with LLM, Tools execute passively (unless wrapping Sub-Agents).**
 
-- **Agents** decide *what* to do (which tool to use)
-- **Tools** decide *how* to do it (including making LLM calls)
+- **Agents** use LLM to decide *what* to do and *which tool* to use
+- **Tools** execute the *how* - passive operations without reasoning
+- **Sub-Agents** can be wrapped in tools for hierarchical composition
 
 This separation is fundamental to building scalable, maintainable agentic systems.
+
+### Current Implementation Status
+
+Our framework currently uses a **transitional pattern** where some domain-specific LLM calls exist in tools (e.g., text-to-SQL). This is pragmatic but differs from the ideal:
+
+**Current (Transitional)**:
+```clojure
+;; Tool contains domain-specific LLM call
+(defn generate-sql-tool []
+  (create-tool :generate-sql "Generate SQL"
+    (fn [question context]
+      (llm/generate-completion prompt :temperature 0.1))))
+```
+
+**Recommended (Standard Pattern)**:
+```clojure
+;; Sub-agent for domain-specific reasoning
+(def sql-sub-agent 
+  (create-llm-agent "sql-expert" "SQL reasoning"
+    {:format-prompt (create-prompt-tool)}))
+
+;; Tool wraps sub-agent
+(defn sql-expert-tool [sql-agent]
+  (create-tool :sql-expert "SQL generation"
+    (fn [question context]
+      (execute sql-agent question context))))
+```
+
+### Migration Path
+
+To fully align with standard agentic architecture:
+
+1. ✅ **Already Implemented**: Agent-level LLM for tool selection (`:tool-selection-strategy :llm`)
+2. ✅ **Already Implemented**: Support for Autonomous vs Sequential modes
+3. 🔄 **Transitional**: Domain-specific LLM calls in tools
+4. 🎯 **Future**: Migrate domain-specific LLM calls to Sub-Agents wrapped in tools
+
+This provides a clear path from our pragmatic current state to the ideal standard architecture.
 
 ## References
 
 - [Microsoft Semantic Kernel Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
-- [LangChain Tool Documentation](https://python.langchain.com/docs/modules/tools/)
-- [LangGraph State Management](https://langchain-ai.github.io/langgraph/)
+- [LangChain Agent Documentation](https://python.langchain.com/docs/modules/agents/)
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 - [AGENTIC_FRAMEWORK.md](./AGENTIC_FRAMEWORK.md) - Our framework documentation
 - [REFACTORING_DECISIONS.md](./REFACTORING_DECISIONS.md) - Architecture decisions
 
 ---
 
-**Summary**: LLM calls are in tools because tools encapsulate complete task execution, while agents orchestrate tool selection and context management. This is the standard pattern used across all major agentic frameworks.
+**Summary**: Agents use LLM to reason and select tools. Tools are passive executors unless wrapping Sub-Agents. This corrected understanding aligns with standard agentic frameworks like Microsoft Semantic Kernel, LangChain, and LangGraph.

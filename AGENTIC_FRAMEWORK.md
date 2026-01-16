@@ -1,5 +1,21 @@
 # Agentic Framework Architecture
 
+## Corrected Architecture Understanding
+
+**Important**: This framework follows the standard agentic pattern where:
+
+- **The Controller**: The **Agent** (via the LLM) is the only entity that reasons and issues tool calls
+- **The Executor**: **Tools** are passive execution units that do NOT contain LLM calls unless wrapping a Sub-Agent
+
+For detailed explanation of this architecture, see [WHY_LLM_IN_TOOLS.md](WHY_LLM_IN_TOOLS.md).
+
+### Core Principles
+
+1. **Agent Reasoning**: Agents use LLM to understand input, make decisions, and select tools
+2. **Tool Execution**: Tools are passive executors (database queries, file operations, calculations)
+3. **Hierarchical Composition**: Tools CAN wrap Sub-Agents for complex domain-specific reasoning
+4. **Execution Modes**: Agents support Autonomous (LLM-driven) and Sequential (deterministic) modes
+
 ## Overview
 
 This project has been refactored to use an **Agentic Framework** architecture inspired by **Microsoft Semantic Kernel** and **Microsoft AutoGen**, but implemented natively in Clojure to leverage functional programming patterns and JVM performance.
@@ -103,12 +119,91 @@ Our framework demonstrates these universal patterns in a Clojure-native implemen
 
 All agents implement this protocol, ensuring consistent interface.
 
+#### Agent Execution Modes (NEW! ✨)
+
+Agents support two execution modes for flexibility:
+
+```clojure
+;; Autonomous Mode: Agent uses LLM to reason and select tools
+(create-llm-agent 
+  "intelligent-agent"
+  "Makes smart decisions"
+  tools
+  :config {:execution-mode :autonomous})
+
+;; Sequential Mode: Agent follows predefined tool sequence
+(create-llm-agent 
+  "deterministic-agent"
+  "Follows fixed sequence"
+  tools
+  :config {:execution-mode :sequential
+           :primary-tool :specific-tool})
+```
+
+**When to use each mode:**
+- **Autonomous** (`:execution-mode :autonomous`):
+  - Complex, varied inputs requiring intelligent decisions
+  - Multiple tools with different purposes
+  - Unpredictable user queries
+  - Automatically sets `:tool-selection-strategy :llm`
+
+- **Sequential** (`:execution-mode :sequential`):
+  - Well-defined, predictable workflows
+  - Single-purpose agents
+  - Testing and debugging
+  - Lower latency requirements
+  - Automatically sets `:tool-selection-strategy :primary`
+
 #### Tool System
 ```clojure
 (defn create-tool [name description fn & {:keys [schema]}])
+(defn create-sub-agent-tool [name description sub-agent])
 ```
 
 Tools are named functions with metadata. Agents use tools to accomplish tasks.
+
+**Two types of tools:**
+1. **Passive Tools**: Execute specific tasks (database, file operations, calculations)
+2. **Sub-Agent Tools**: Wrap another agent for hierarchical composition
+
+**Hierarchical Agent Composition (NEW! ✨)**
+
+Tools can wrap sub-agents, enabling hierarchical agent architectures:
+
+```clojure
+;; Create a specialized sub-agent
+(def sql-expert-agent 
+  (create-llm-agent "sql-expert" "SQL reasoning"
+    {:format (create-format-tool)}
+    :config {:execution-mode :sequential}))
+
+;; Wrap sub-agent in a tool
+(def sql-expert-tool 
+  (create-sub-agent-tool :sql-expert 
+                         "Specialized SQL generation"
+                         sql-expert-agent))
+
+;; Parent agent uses sub-agent via tool
+(def parent-agent 
+  (create-llm-agent "coordinator" "Coordinates work"
+    {:sql-expert sql-expert-tool
+     :database (create-db-tool)}
+    :config {:execution-mode :autonomous}))
+```
+
+**Architecture:**
+```
+Parent Agent (LLM reasoning)
+  ├─> Sub-Agent Tool 1
+  │    └─> Sub-Agent (LLM reasoning)
+  │         └─> Passive Tools
+  ├─> Sub-Agent Tool 2
+  │    └─> Sub-Agent (LLM reasoning)
+  │         └─> Passive Tools
+  └─> Passive Tool (direct execution)
+```
+
+See [examples/hierarchical_agents.clj](../examples/hierarchical_agents.clj) for comprehensive demonstrations.
 
 #### Multi-Tool Selection (NEW! ✨)
 ```clojure

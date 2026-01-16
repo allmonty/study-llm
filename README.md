@@ -11,8 +11,20 @@ This project has been **refactored to use an agentic framework architecture**:
 - **🔄 Multi-Agent Orchestration**: Coordinated workflow between agents
 - **💾 Memory Management**: Agents maintain conversation context
 - **📐 Modular Design**: Each agent has a clear, focused responsibility
+- **🎯 Execution Modes**: Autonomous (LLM-driven) or Sequential (deterministic)
+- **🌳 Hierarchical Composition**: Tools can wrap Sub-Agents for complex reasoning
 
-For detailed information about the agentic framework, see [AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md).
+### Corrected Architecture Understanding
+
+**The Controller**: Agents use LLM to reason and select tools  
+**The Executor**: Tools are passive (unless wrapping Sub-Agents)
+
+This aligns with standard agentic frameworks like Microsoft Semantic Kernel, LangChain, and LangGraph.
+
+For detailed information about the agentic framework, see:
+- [WHY_LLM_IN_TOOLS.md](WHY_LLM_IN_TOOLS.md) - **Corrected architecture principles**
+- [AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md) - Framework documentation
+- [examples/](examples/) - Practical examples including hierarchical agents
 
 ## 🎯 Project Goals
 
@@ -93,7 +105,7 @@ When you ask a question, it flows through specialized agents:
    - Manages context passing between agents
    - Maintains conversation memory
 
-> **Architecture Note**: In this framework, LLM calls are made from within tools, not directly from agents. This follows the industry-standard **Tool Pattern** used by Microsoft Semantic Kernel, LangChain, and LangGraph. For a detailed explanation of this design decision, see **[WHY_LLM_IN_TOOLS.md](WHY_LLM_IN_TOOLS.md)**.
+> **Architecture Note**: This framework follows the standard agentic pattern where **Agents use LLM to reason and select tools**, while **Tools are passive executors** (unless wrapping Sub-Agents for hierarchical composition). Agents can operate in **Autonomous mode** (LLM-driven tool selection) or **Sequential mode** (deterministic). For a detailed explanation of this corrected architecture, see **[WHY_LLM_IN_TOOLS.md](WHY_LLM_IN_TOOLS.md)**.
 
 ## 🚀 Quick Start
 
@@ -908,16 +920,20 @@ This is a learning project. Feel free to:
 - Create new tools for existing agents
 - Try different databases
 
-### Multi-Tool Agent Selection (NEW! ✨)
+### Multi-Tool Agent Selection & Hierarchical Agents (NEW! ✨)
 
-**Can agents decide between multiple tools?** Yes! Agents can now intelligently select the right tool based on input and context.
+**Can agents decide between multiple tools?** Yes! Agents can intelligently select the right tool based on input and context.
+
+**Can tools contain other agents?** Yes! Tools can wrap Sub-Agents for hierarchical composition.
 
 See the **[examples/](examples/)** directory for demonstrations of:
-- **LLM-based selection**: Agent uses LLM to understand intent and choose tools
+- **Multi-tool selection**: Agent uses LLM to understand intent and choose tools
+- **Hierarchical agents**: Parent agents coordinating specialized sub-agents
+- **Execution modes**: Autonomous (LLM-driven) vs Sequential (deterministic)
 - **Custom function selection**: Agent uses custom logic to choose tools
 - **Context-aware selection**: Agent examines context to make decisions
 
-Example:
+**Example 1: Multi-Tool Selection**
 ```clojure
 ;; Create an agent with multiple tools
 (def math-agent (create-math-agent))
@@ -928,13 +944,32 @@ Example:
 (execute math-agent "what is 100 divided by 5?" {...})  ; LLM selects :divide tool
 ```
 
-**Where does the "intelligence" come from?**
-- The agent's tool selection mechanism, powered by LLM or custom logic
-- Available strategies: `:llm`, `:function`, `:primary` (default)
+**Example 2: Hierarchical Agents**
+```clojure
+;; Sub-agent for specialized reasoning
+(def text-processor (create-text-processor-agent))
 
-Run the example:
+;; Wrap sub-agent in a tool
+(def text-tool (create-sub-agent-tool :text-processing 
+                                      "Delegates to text sub-agent"
+                                      text-processor))
+
+;; Parent agent coordinates sub-agents
+(def coordinator (create-llm-agent "coordinator" "Coordinates work"
+                    {:text-processing text-tool
+                     :data-analysis (create-data-analysis-tool)}
+                    :config {:execution-mode :autonomous}))
+```
+
+**Where does the "intelligence" come from?**
+- **Agent-level**: Agent's LLM reasons about which tool to invoke
+- **Sub-Agent level**: Sub-agents have their own LLM for specialized reasoning
+- **Execution modes**: Choose between Autonomous (intelligent) or Sequential (deterministic)
+
+Run the examples:
 ```bash
 clj -M -m multi-tool-agent
+clj -M -m hierarchical-agents
 ```
 
 For more details, see [examples/README.md](examples/README.md).
@@ -960,6 +995,8 @@ Ideas to extend this project using the agentic framework:
 8. **Agent Communication** - Direct agent-to-agent messaging
 9. **Persistent Memory** - Store conversation history in database
 10. **Tool Discovery** - Automatic tool registration and selection
+11. ✅ **Execution Modes** - Autonomous vs Sequential (IMPLEMENTED!)
+12. ✅ **Hierarchical Composition** - Sub-agents wrapped in tools (IMPLEMENTED!)
 
 **Application Features**:
 11. Add a web UI (React + ClojureScript)
