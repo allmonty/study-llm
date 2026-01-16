@@ -35,10 +35,18 @@
     :summarize
     "Summarizes text to key points"
     (fn [text context]
-      (if (nil? text)
+      (cond
+        (nil? text)
         {:status :error
          :result "Cannot summarize nil text"
          :updated-context {:summarized false}}
+        
+        (empty? text)
+        {:status :error
+         :result "Cannot summarize empty text"
+         :updated-context {:summarized false}}
+        
+        :else
         {:status :success
          :result (str "Summary: " (subs text 0 (min 100 (count text))) "...")
          :updated-context {:summarized true}}))))
@@ -50,10 +58,18 @@
     :translate
     "Translates text to another language"
     (fn [text context]
-      (if (nil? text)
+      (cond
+        (nil? text)
         {:status :error
          :result "Cannot translate nil text"
          :updated-context {:translated false}}
+        
+        (empty? text)
+        {:status :error
+         :result "Cannot translate empty text"
+         :updated-context {:translated false}}
+        
+        :else
         {:status :success
          :result (str "Translated: " text)
          :updated-context {:translated true}}))))

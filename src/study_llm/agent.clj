@@ -60,6 +60,9 @@
     (def sql-tool (create-sub-agent-tool :sql-expert \"SQL reasoning\" sql-expert))
   "
   [name description sub-agent]
+  (when (nil? sub-agent)
+    (throw (ex-info "sub-agent cannot be nil" 
+                   {:name name :description description})))
   (create-tool name description
     (fn [input context]
       (execute sub-agent input context))
