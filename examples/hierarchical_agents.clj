@@ -35,9 +35,13 @@
     :summarize
     "Summarizes text to key points"
     (fn [text context]
-      {:status :success
-       :result (str "Summary: " (subs text 0 (min 100 (count text))) "...")
-       :updated-context {:summarized true}})))
+      (if (nil? text)
+        {:status :error
+         :result "Cannot summarize nil text"
+         :updated-context {:summarized false}}
+        {:status :success
+         :result (str "Summary: " (subs text 0 (min 100 (count text))) "...")
+         :updated-context {:summarized true}}))))
 
 (defn create-translate-tool
   "Passive tool that translates text."
@@ -46,9 +50,13 @@
     :translate
     "Translates text to another language"
     (fn [text context]
-      {:status :success
-       :result (str "Translated: " text)
-       :updated-context {:translated true}})))
+      (if (nil? text)
+        {:status :error
+         :result "Cannot translate nil text"
+         :updated-context {:translated false}}
+        {:status :success
+         :result (str "Translated: " text)
+         :updated-context {:translated true}}))))
 
 (defn create-statistics-tool
   "Passive tool that computes statistics."

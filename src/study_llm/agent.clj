@@ -64,7 +64,7 @@
     (fn [input context]
       (execute sub-agent input context))
     :schema {:type :sub-agent
-             :agent-name (:name sub-agent)}))
+             :agent-name (or (:name sub-agent) "unknown")}))
 
 (defn invoke-tool
   "Invoke a tool with the given arguments."
@@ -255,7 +255,11 @@
                         (case execution-mode
                           :autonomous (assoc config :tool-selection-strategy :llm)
                           :sequential (assoc config :tool-selection-strategy :primary)
-                          config)
+                          ;; Default: treat unknown modes as sequential
+                          (do
+                            (log/warn "Unknown execution-mode:" execution-mode 
+                                     "- defaulting to :sequential")
+                            (assoc config :tool-selection-strategy :primary)))
                         config)]
     (->LLMAgent name description tools memory updated-config)))
 
