@@ -93,6 +93,8 @@ When you ask a question, it flows through specialized agents:
    - Manages context passing between agents
    - Maintains conversation memory
 
+> **Architecture Note**: In this framework, LLM calls are made from within tools, not directly from agents. This follows the industry-standard **Tool Pattern** used by Microsoft Semantic Kernel, LangChain, and LangGraph. For a detailed explanation of this design decision, see **[WHY_LLM_IN_TOOLS.md](WHY_LLM_IN_TOOLS.md)**.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -867,6 +869,7 @@ docker volume rm study-llm_ollama_data
 
 ### Agentic AI Resources
 - **[AGENTIC_FRAMEWORK.md](AGENTIC_FRAMEWORK.md)** - Detailed documentation of our framework
+- **[WHY_LLM_IN_TOOLS.md](WHY_LLM_IN_TOOLS.md)** - Explains why LLM calls are made from tools instead of agents
 - **[LANGCHAIN_LANGGRAPH_COMPARISON.md](LANGCHAIN_LANGGRAPH_COMPARISON.md)** - How our architecture compares to LangChain and LangGraph
 - [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel) - Official Microsoft framework
 - [Microsoft AutoGen](https://github.com/microsoft/autogen) - Multi-agent conversation framework
