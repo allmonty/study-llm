@@ -118,7 +118,7 @@
   Execution modes:
   - :autonomous - Uses LLM to decide between summarize/translate
   - :sequential - Always uses primary tool (summarize)"
-  [& {:keys [execution-mode] :or {execution-mode :sequential}}]
+  [& {:keys [execution-mode] :or {execution-mode :autonomous}}]
   (let [tools {:summarize (create-summarize-tool)
                :translate (create-translate-tool)}]
     (agent/create-llm-agent
@@ -134,7 +134,7 @@
   Execution modes:
   - :autonomous - Uses LLM to decide between statistics/insights
   - :sequential - Always uses primary tool (statistics)"
-  [& {:keys [execution-mode] :or {execution-mode :sequential}}]
+  [& {:keys [execution-mode] :or {execution-mode :autonomous}}]
   (let [tools {:statistics (create-statistics-tool)
                :insights (create-insights-tool)}]
     (agent/create-llm-agent
@@ -160,8 +160,8 @@
   - execution-mode: :autonomous or :sequential for parent agent
   - sub-agent-mode: :autonomous or :sequential for sub-agents"
   [& {:keys [execution-mode sub-agent-mode]
-      :or {execution-mode :sequential
-           sub-agent-mode :sequential}}]
+      :or {execution-mode :autonomous
+           sub-agent-mode :autonomous}}]
   (let [;; Create sub-agents
         text-processor (create-text-processor-agent :execution-mode sub-agent-mode)
         data-analyzer (create-data-analyzer-agent :execution-mode sub-agent-mode)
