@@ -44,6 +44,28 @@
    :fn f
    :schema schema})
 
+(defn create-sub-agent-tool
+  "Create a tool that wraps a sub-agent, enabling hierarchical agent composition.
+  
+  This allows tools to delegate to specialized sub-agents for complex reasoning tasks.
+  The sub-agent has its own LLM reasoning, tools, and memory.
+  
+  Parameters:
+  - name: Unique identifier for the tool
+  - description: What the sub-agent does
+  - sub-agent: An agent instance to delegate to
+  
+  Example:
+    (def sql-expert (create-llm-agent ...))
+    (def sql-tool (create-sub-agent-tool :sql-expert \"SQL reasoning\" sql-expert))
+  "
+  [name description sub-agent]
+  (create-tool name description
+    (fn [input context]
+      (execute sub-agent input context))
+    :schema {:type :sub-agent
+             :agent-name (:name sub-agent)}))
+
 (defn invoke-tool
   "Invoke a tool with the given arguments."
   [tool & args]
@@ -203,11 +225,39 @@
   - name: Agent identifier
   - description: What this agent does
   - tools: Map of tool-name -> tool for this agent
-  - config: Agent-specific configuration (e.g., temperature, prompts)"
+  - config: Agent-specific configuration
+  
+  Config options:
+  - :execution-mode - :autonomous (LLM-driven, default) or :sequential (deterministic)
+  - :tool-selection-strategy - :llm (intelligent), :primary (default), or :function (custom)
+  - :primary-tool - The default tool to use in :primary strategy
+  - :tool-selector-fn - Custom function for :function strategy
+  - :temperature - LLM temperature for tool selection
+  
+  Execution modes:
+  - :autonomous - Agent uses LLM to reason and select appropriate tool (:tool-selection-strategy :llm)
+  - :sequential - Agent follows predefined sequence (:tool-selection-strategy :primary)
+  
+  Example (Autonomous):
+    (create-llm-agent \"smart-agent\" \"Intelligent agent\" tools
+      :config {:execution-mode :autonomous})
+  
+  Example (Sequential):
+    (create-llm-agent \"simple-agent\" \"Deterministic agent\" tools
+      :config {:execution-mode :sequential :primary-tool :specific-tool})
+  "
   [name description tools & {:keys [memory config]
                              :or {memory (create-memory :conversation)
                                   config {}}}]
-  (->LLMAgent name description tools memory config))
+  ;; Set tool-selection-strategy based on execution-mode if not explicitly set
+  (let [execution-mode (:execution-mode config)
+        updated-config (if (and execution-mode (not (:tool-selection-strategy config)))
+                        (case execution-mode
+                          :autonomous (assoc config :tool-selection-strategy :llm)
+                          :sequential (assoc config :tool-selection-strategy :primary)
+                          config)
+                        config)]
+    (->LLMAgent name description tools memory updated-config)))
 
 (defrecord DatabaseAgent [name description tools memory config]
   Agent
