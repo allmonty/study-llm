@@ -336,19 +336,24 @@ From `src/study_llm/agent.clj`:
 
 ### 1. **Framework Support for Multiple Tools per Agent**
 
-The framework is designed to support multiple tools per agent. While the current SQL Generator and Result Analyzer agents use one primary tool each, the architecture supports multiple tools as shown in the examples/ directory:
+The framework is designed to support multiple tools per agent. While the current SQL Generator and Result Analyzer agents use one primary tool each, the architecture supports multiple tools as demonstrated in the `examples/multi_tool_agent.clj` file:
 
 ```clojure
-;; Framework capability: Agent with multiple tools
-(defn create-advanced-agent []
-  (let [tools {:generate (generate-sql-tool)
-               :validate (validate-sql-tool)
-               :optimize (optimize-sql-tool)}]
-    (create-llm-agent "advanced" "Advanced SQL" tools
+;; Example from examples/multi_tool_agent.clj
+;; Agent with multiple tools (add, subtract, multiply, divide)
+(defn create-math-agent []
+  (let [tools {:add (create-add-tool)
+               :subtract (create-subtract-tool)
+               :multiply (create-multiply-tool)
+               :divide (create-divide-tool)}]
+    (agent/create-llm-agent
+      "math-agent"
+      "Performs mathematical operations"
+      tools
       :config {:tool-selection-strategy :llm})))
 ```
 
-The agent can even use the LLM to intelligently select which tool to use based on the input!
+The agent can even use the LLM to intelligently select which tool to use based on the input! For example, if the user says "add 5 and 3", the agent uses the LLM to select the `:add` tool.
 
 ### 2. **Tool Reusability** (Currently Demonstrated)
 
