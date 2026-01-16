@@ -16,7 +16,7 @@ Agent (LLMAgent)
 
 ### Where LLM Calls Happen
 
-Looking at the codebase:
+In our codebase, LLM calls are located as follows:
 
 1. **SQL Generator Agent** (`src/study_llm/agents/sql_generator.clj`)
    - Agent: `LLMAgent`
@@ -334,12 +334,12 @@ From `src/study_llm/agent.clj`:
 
 ## Benefits Demonstrated in This Codebase
 
-### 1. **Multiple Tools per Agent** (Future Enhancement)
+### 1. **Framework Support for Multiple Tools per Agent**
 
-While current agents have one primary tool, the framework supports multiple tools:
+The framework is designed to support multiple tools per agent. While the current SQL Generator and Result Analyzer agents use one primary tool each, the architecture supports multiple tools as shown in the examples/ directory:
 
 ```clojure
-;; Agent with multiple tools
+;; Framework capability: Agent with multiple tools
 (defn create-advanced-agent []
   (let [tools {:generate (generate-sql-tool)
                :validate (validate-sql-tool)
@@ -348,9 +348,9 @@ While current agents have one primary tool, the framework supports multiple tool
       :config {:tool-selection-strategy :llm})))
 ```
 
-The agent can use the LLM to select which tool to use!
+The agent can even use the LLM to intelligently select which tool to use based on the input!
 
-### 2. **Tool Reusability**
+### 2. **Tool Reusability** (Currently Demonstrated)
 
 The same tool could be used in different agents:
 
@@ -464,12 +464,14 @@ graph.add_node("generate_sql", sql_node)
 **Pattern**: Agents contain the logic but delegate to functions
 ```python
 class SQLAgent(ConversableAgent):
+    @register_function
     def generate_sql(self, question):
+        """Function callable by the agent or other agents."""
         prompt = self.create_prompt(question)
-        return self.llm.generate(prompt)  # Agent calls LLM
+        return self.llm.generate(prompt)  # Function contains LLM call
 ```
 
-**Note**: AutoGen is agent-centric but still uses function calling patterns.
+**Note**: AutoGen uses a hybrid approach where agents can call LLM directly OR use registered functions. Our framework follows the pure tool/function pattern similar to Semantic Kernel and LangChain.
 
 ### Our Implementation Aligns with Semantic Kernel and LangChain
 
